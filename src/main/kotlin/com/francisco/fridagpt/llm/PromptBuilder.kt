@@ -1,0 +1,178 @@
+package com.francisco.fridagpt.llm
+
+import com.francisco.fridagpt.core.ActionType
+import com.francisco.fridagpt.core.ParsedQuery
+import com.francisco.fridagpt.models.AppContext
+import com.francisco.fridagpt.models.ClassCategory
+import com.francisco.fridagpt.models.ClassInfo
+
+/**
+ * Constrói prompts otimizados para o LLM
+ */
+class PromptBuilder {
+
+    /**
+     * Prompt para query específica (classe e método conhecidos)
+     */
+    fun buildSpecificPrompt(parsed: ParsedQuery): String {
+        return """
+You are an expert in Frida dynamic instrumentation for Android.
+
+Generate a Frida script in JavaScript to accomplish the following task:
+
+TARGET:
+- Class: ${parsed.className}
+- Method: ${parsed.methodName}
+${if (parsed.parameters.isNotEmpty()) "- Parameters: ${parsed.parameters.joinToString(", ")}" else ""}
+${if (parsed.returnType != null) "- Return Type: ${parsed.returnType}" else ""}
+
+ACTION:
+${getActionDescription(parsed.action, parsed.returnValue)}
+
+REQUIREMENTS:
+1. Use Java.perform() wrapper
+2. Hook the exact method specified
+3. Include error handling (try-catch)
+4. Add console.log statements to show when hook is triggered
+5. Log method parameters when called
+6. Implement the required action
+7. Keep code clean and well-commented
+
+OUTPUT:
+Provide ONLY the JavaScript code, no explanations before or after.
+        """.trimIndent()
+    }
+
+    /**
+     * Prompt para query com contexto (classes relevantes conhecidas)
+     */
+    fun buildContextualPrompt(
+        query: String,
+        relevantClasses: List<ClassInfo>,
+        context: AppContext
+    ): String {
+        val classesInfo = relevantClasses.take(5).joinToString("\n") { classInfo ->
+            val methodsInfo = if (classInfo.methods.isNotEmpty()) {
+                classInfo.methods.take(10).joinToString("\n      ") {
+                    "- ${it.signature}"
+                }
+            } else {
+                "  (methods not collected)"
+            }
+            """
+  Class: ${classInfo.name}
+    Methods:
+      $methodsInfo
+            """.trimIndent()
+        }
+
+        return """
+You are an expert in Frida dynamic instrumentation for Android.
+
+USER REQUEST:
+"$query"
+
+APP CONTEXT:
+- Package: ${context.appInfo.packageName}
+- Debuggable: ${context.appInfo.isDebuggable}
+
+DETECTED FRAMEWORKS:
+${context.frameworks.take(5).joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
+
+RELEVANT CLASSES FOUND:
+$classesInfo
+
+TASK:
+Analyze the user request and the available classes/methods, then generate a Frida script to accomplish the task.
+
+REQUIREMENTS:
+1. Use Java.perform() wrapper
+2. Hook the most appropriate method(s) to achieve the goal
+3. Include error handling
+4. Add informative console.log statements
+5. If multiple methods need to be hooked, hook all of them
+6. Consider the frameworks detected when writing the script
+7. Be specific - use the actual class and method names from the context
+
+OUTPUT:
+Provide ONLY the JavaScript code, no explanations.
+        """.trimIndent()
+    }
+
+    /**
+     * Prompt para query genérica (descoberta completa)
+     */
+    fun buildGenericPrompt(query: String, context: AppContext): String {
+        val appClasses = context.classes
+            .filter { it.category == ClassCategory.APP }
+            .take(20)
+            .joinToString("\n") { "- ${it.name}" }
+
+        return """
+You are an expert in Frida dynamic instrumentation for Android.
+
+USER REQUEST:
+"$query"
+
+APP INFORMATION:
+- Package: ${context.appInfo.packageName}
+- Target SDK: ${context.appInfo.targetSdk}
+- Debuggable: ${context.appInfo.isDebuggable}
+
+DETECTED FRAMEWORKS:
+${context.frameworks.joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
+
+APP CLASSES (sample):
+$appClasses
+... (${context.classes.size} total classes)
+
+TASK:
+Based on the user request and app information, generate a Frida script to accomplish the goal.
+You may need to make educated guesses about which classes/methods to hook based on common Android patterns.
+
+For example:
+- Emulator detection: often in Application class, SecurityCheck, DeviceValidator classes
+- Root detection: RootChecker, SecurityManager classes  
+- SSL Pinning: OkHttpClient, CertificatePinner, custom network classes
+
+REQUIREMENTS:
+1. Use Java.perform() wrapper
+2. Hook appropriate methods to achieve the goal
+3. Include error handling for class/method not found
+4. Add console.log statements
+5. Try multiple common patterns if needed
+6. Comment the code explaining what each hook does
+
+OUTPUT:
+Provide ONLY the JavaScript code, no explanations.
+        """.trimIndent()
+    }
+
+    /**
+     * Descreve a ação requerida
+     */
+    private fun getActionDescription(action: ActionType, returnValue: String?): String {
+        return when (action) {
+            ActionType.RETURN_FALSE ->
+                "Always return false (bypass the check)"
+
+            ActionType.RETURN_TRUE ->
+                "Always return true"
+
+            ActionType.RETURN_NULL ->
+                "Always return null"
+
+            ActionType.RETURN_CUSTOM ->
+                "Return the value: $returnValue"
+
+            ActionType.LOG_CALLS ->
+                "Log all method calls with parameters and return values"
+
+            ActionType.MODIFY_PARAMS ->
+                "Intercept and modify method parameters"
+
+            ActionType.HOOK_GENERIC ->
+                "Hook the method and log when it's called"
+        }
+    }
+}
