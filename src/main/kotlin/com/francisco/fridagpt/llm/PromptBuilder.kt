@@ -1,6 +1,7 @@
 package com.francisco.fridagpt.llm
 
 import com.francisco.fridagpt.core.ActionType
+import com.francisco.fridagpt.core.MultiHookQuery
 import com.francisco.fridagpt.core.ParsedQuery
 import com.francisco.fridagpt.models.AppContext
 import com.francisco.fridagpt.models.ClassCategory
@@ -37,6 +38,75 @@ REQUIREMENTS:
 5. Log method parameters when called
 6. Implement the required action
 7. Keep code clean and well-commented
+
+OUTPUT:
+Provide ONLY the JavaScript code, no explanations before or after.
+        """.trimIndent()
+    }
+
+    /**
+     * Prompt para múltiplos hooks
+     */
+    fun buildMultiHookPrompt(multiHook: MultiHookQuery): String {
+        val hooksDescription = multiHook.hooks.mapIndexed { index, hook ->
+            """
+Hook ${index + 1}:
+  - Class: ${hook.className}
+  - Method: ${hook.methodName}
+  ${if (hook.parameters.isNotEmpty()) "- Parameters: ${hook.parameters.joinToString(", ")}" else ""}
+  - Action: ${getActionDescription(hook.action, hook.returnValue)}
+            """.trimIndent()
+        }.joinToString("\n\n")
+
+        return """
+You are an expert in Frida dynamic instrumentation for Android.
+
+Generate a Frida script in JavaScript to accomplish ALL of the following tasks:
+
+TARGETS (${multiHook.hooks.size} hooks required):
+$hooksDescription
+
+REQUIREMENTS:
+1. Use a single Java.perform() wrapper for all hooks
+2. Hook ALL ${multiHook.hooks.size} methods specified above
+3. Include error handling (try-catch) for each hook
+4. Add console.log statements to show when each hook is triggered
+5. Log the class and method name for each hook
+6. Implement the required action for each method
+7. If any hook fails, continue with the others (don't crash the script)
+8. Keep code clean and well-commented
+9. Number each hook (// Hook 1, // Hook 2, etc.)
+
+EXAMPLE STRUCTURE:
+```javascript
+Java.perform(function() {
+    console.log("[+] Starting multi-hook script");
+    
+    // Hook 1: Class1.method1
+    try {
+        var Class1 = Java.use("...");
+        Class1.method1.implementation = function() {
+            console.log("[Hook 1] Class1.method1 called");
+            // action
+        };
+    } catch(e) {
+        console.error("[Hook 1] Failed: " + e);
+    }
+    
+    // Hook 2: Class2.method2
+    try {
+        var Class2 = Java.use("...");
+        Class2.method2.implementation = function() {
+            console.log("[Hook 2] Class2.method2 called");
+            // action
+        };
+    } catch(e) {
+        console.error("[Hook 2] Failed: " + e);
+    }
+    
+    console.log("[+] All hooks installed");
+});
+```
 
 OUTPUT:
 Provide ONLY the JavaScript code, no explanations before or after.

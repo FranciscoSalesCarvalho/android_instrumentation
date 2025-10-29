@@ -146,22 +146,43 @@ class FridaLLMTool : CliktCommand() {
         llmClient: LLMClient?,
         executor: ScriptExecutor
     ) {
-        val parsed = parser.parse(query)
+        val multiHook = parser.parseMultiHook(query)
 
-        if (parsed == null) {
-            println("❌ Could not parse specific query")
+        if (multiHook == null || multiHook.hooks.isEmpty()) {
+            println("❌ Could not parse query")
             println("Expected format: 'hook com.example.Class.method() return false'")
+            println("\nFor multiple hooks use:")
+            println("  hook Class1.method1() return false AND hook Class2.method2() return false")
+            println("  hook Class1.method1() return false, hook Class2.method2() return false")
             return
         }
 
-        println("\n📋 Parsed Information:")
-        println("   Class: ${parsed.className}")
-        println("   Method: ${parsed.methodName}")
-        println("   Action: ${parsed.action}")
-        parsed.returnValue?.let { println("   Return: $it") }
+        if (multiHook.hooks.size == 1) {
+            // Single hook
+            val parsed = multiHook.hooks.first()
+            println("\n📋 Parsed Information:")
+            println("   Class: ${parsed.className}")
+            println("   Method: ${parsed.methodName}")
+            println("   Action: ${parsed.action}")
+            parsed.returnValue?.let { println("   Return: $it") }
+        } else {
+            // Multiple hooks
+            println("\n📋 Parsed Multi-Hook Query (${multiHook.hooks.size} hooks):")
+            multiHook.hooks.forEachIndexed { index, hook ->
+                println("\n   Hook ${index + 1}:")
+                println("     Class: ${hook.className}")
+                println("     Method: ${hook.methodName}")
+                println("     Action: ${hook.action}")
+                hook.returnValue?.let { println("     Return: $it") }
+            }
+        }
 
         // Gerar prompt
-        val prompt = promptBuilder.buildSpecificPrompt(parsed)
+        val prompt = if (multiHook.hooks.size == 1) {
+            promptBuilder.buildSpecificPrompt(multiHook.hooks.first())
+        } else {
+            promptBuilder.buildMultiHookPrompt(multiHook)
+        }
 
         if (llmClient == null) {
             println("\n📝 Prompt that would be sent:")

@@ -132,7 +132,7 @@ class FridaConnector(
             // Lê output com timeout
             val reader = BufferedReader(InputStreamReader(proc.inputStream))
             val startTime = System.currentTimeMillis()
-            val timeout = 15000L // 15 segundos
+            val timeout = 30000L // 15 segundos
 
             while (true) {
                 if (reader.ready()) {

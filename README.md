@@ -335,8 +335,8 @@ If you use this tool in your research, please cite:
 ```bibtex
 @misc{frida-llm-tool,
   title={Frida-LLM: AI-Powered Mobile Instrumentation},
-  author={Your Name},
+  author={Francisco Sales},
   year={2025},
-  url={https://github.com/yourusername/frida-llm-tool}
+  url={https://github.com/FranciscoSalesCarvalho/android_instrumentation}
 }
 ```
