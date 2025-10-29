@@ -19,6 +19,15 @@ data class ParsedQuery(
     val returnValue: String?
 )
 
+/**
+ * Query com múltiplos hooks
+ */
+data class MultiHookQuery(
+    val hooks: List<ParsedQuery>,
+    val globalAction: ActionType? = null,
+    val globalReturnValue: String? = null
+)
+
 enum class ActionType {
     RETURN_FALSE,   // Retornar false
     RETURN_TRUE,    // Retornar true
@@ -36,10 +45,87 @@ enum class ActionType {
 class QueryParser {
 
     /**
-     * Tenta parsear uma query específica
+     * Tenta parsear uma query (simples ou múltipla)
      * Retorna null se não conseguir parsear
      */
     fun parse(query: String): ParsedQuery? {
+        val multiHook = parseMultiHook(query)
+        if (multiHook != null && multiHook.hooks.size == 1) {
+            return multiHook.hooks.first()
+        }
+        return null
+    }
+
+    /**
+     * Parseia query com suporte para múltiplos hooks
+     * Separadores: AND, OR, comma (,), semicolon (;)
+     */
+    fun parseMultiHook(query: String): MultiHookQuery? {
+        logger.debug { "Parsing multi-hook query: $query" }
+
+        // Detectar separadores
+        val separators = listOf(
+            " AND " to Regex("""\s+AND\s+""", RegexOption.IGNORE_CASE),
+            " OR " to Regex("""\s+OR\s+""", RegexOption.IGNORE_CASE),
+            "," to Regex(""",\s*"""),
+            ";" to Regex(""";\s*"""),
+            "\n" to Regex("""\n+""")
+        )
+
+        // Encontrar qual separador está presente
+        var segments = listOf(query)
+        for ((name, regex) in separators) {
+            if (regex.containsMatchIn(query)) {
+                segments = query.split(regex).map { it.trim() }.filter { it.isNotEmpty() }
+                logger.debug { "Split by $name: ${segments.size} segments" }
+                break
+            }
+        }
+
+        // Se só tem um segmento, tenta parse simples
+        if (segments.size == 1) {
+            val single = parseSingle(query)
+            return if (single != null) {
+                MultiHookQuery(hooks = listOf(single))
+            } else {
+                null
+            }
+        }
+
+        // Parse cada segmento
+        val hooks = mutableListOf<ParsedQuery>()
+        var globalAction: ActionType? = null
+        var globalReturnValue: String? = null
+
+        for (segment in segments) {
+            val parsed = parseSingle(segment)
+            if (parsed != null) {
+                hooks.add(parsed)
+                // Primeira ação encontrada vira global
+                if (globalAction == null) {
+                    globalAction = parsed.action
+                    globalReturnValue = parsed.returnValue
+                }
+            } else {
+                logger.warn { "Failed to parse segment: $segment" }
+            }
+        }
+
+        return if (hooks.isNotEmpty()) {
+            MultiHookQuery(
+                hooks = hooks,
+                globalAction = globalAction,
+                globalReturnValue = globalReturnValue
+            )
+        } else {
+            null
+        }
+    }
+
+    /**
+     * Parseia um único hook
+     */
+    private fun parseSingle(query: String): ParsedQuery? {
         val normalized = query.lowercase().trim()
 
         // Tenta diferentes padrões de query
@@ -53,12 +139,10 @@ class QueryParser {
         for (parser in parsers) {
             val result = parser(normalized, query)
             if (result != null) {
-                logger.info { "Successfully parsed query using ${parser.name}" }
                 return result
             }
         }
 
-        logger.debug { "Could not parse query: $query" }
         return null
     }
 

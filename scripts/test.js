@@ -1,28 +1,31 @@
 Java.perform(function() {
+    console.log("[+] Starting multi-hook script");
+    
+    // Hook 1: com.francisco.appprotegido.MainActivity.isEmulator
     try {
-        // Hook the MainActivity class
-        var MainActivity = Java.use("com.pentestmobile.appemulator.MainActivity");
-        
-        // Hook the isEmulator method
+        var MainActivity = Java.use("com.francisco.appprotegido.MainActivity");
         MainActivity.isEmulator.implementation = function() {
-            console.log("[+] Hook triggered: MainActivity.isEmulator() called");
-            
-            // Log method parameters (none in this case)
-            console.log("[+] Method parameters: none");
-            
-            // Call the original method to see what it would return
-            var originalResult = this.isEmulator();
-            console.log("[+] Original method would return: " + originalResult);
-            
-            // Always return false to bypass the emulator check
-            console.log("[+] Bypassing emulator check - returning false");
+            console.log("[Hook 1] com.francisco.appprotegido.MainActivity.isEmulator called");
+            console.log("[Hook 1] Bypassing emulator detection - returning false");
             return false;
         };
-        
-        console.log("[+] Successfully hooked MainActivity.isEmulator()");
-        
-    } catch (error) {
-        console.log("[-] Error hooking MainActivity.isEmulator(): " + error.message);
-        console.log("[-] Stack trace: " + error.stack);
+        console.log("[Hook 1] Successfully hooked isEmulator method");
+    } catch(e) {
+        console.error("[Hook 1] Failed: " + e);
     }
+    
+    // Hook 2: com.francisco.appprotegido.MainActivity.isRooted
+    try {
+        var MainActivity = Java.use("com.francisco.appprotegido.MainActivity");
+        MainActivity.isRooted.implementation = function() {
+            console.log("[Hook 2] com.francisco.appprotegido.MainActivity.isRooted called");
+            console.log("[Hook 2] Bypassing root detection - returning false");
+            return false;
+        };
+        console.log("[Hook 2] Successfully hooked isRooted method");
+    } catch(e) {
+        console.error("[Hook 2] Failed: " + e);
+    }
+    
+    console.log("[+] All hooks installed");
 });
