@@ -1,14 +1,18 @@
 package com.francisco.fridagpt
 
+import com.francisco.fridagpt.collectors.LogAnalyzer
+import com.francisco.fridagpt.collectors.StorageCollector
 import com.francisco.fridagpt.core.*
 import com.francisco.fridagpt.core.SSLBypassOrchestrator.PhaseResult
 import com.francisco.fridagpt.llm.LLMClient
 import com.francisco.fridagpt.llm.PromptBuilder
 import com.francisco.fridagpt.models.AppContext
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
+import com.github.ajalt.clikt.parameters.types.int
 import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
@@ -71,6 +75,16 @@ class FridaLLMTool : CliktCommand() {
         help = "Save generated script to file"
     )
 
+    private val analyzeLogs by option(
+        "--analyze-logs",
+        help = "Analyze app logs for sensitive data exposure"
+    ).flag(default = false)
+
+    private val logDuration by option(
+        "--log-duration",
+        help = "Duration in seconds to collect logs (default: 30)"
+    ).int().default(30)
+
     override fun run() = runBlocking {
         printBanner()
 
@@ -100,6 +114,14 @@ class FridaLLMTool : CliktCommand() {
             val promptBuilder = PromptBuilder()
             val executor = ScriptExecutor(connector)
             val llmClient = if (key != null) LLMClient(key) else null
+
+            if (analyzeLogs) {
+                logger.info { "Starting log analysis..." }
+                val analyzer = LogAnalyzer(connector)
+                val result = analyzer.analyzeLogs(logDuration)
+                println(analyzer.generateReport(result))
+                return@runBlocking
+            }
 
             // Se há query direta, processar e sair
             query?.let { userQuery ->
@@ -132,7 +154,8 @@ class FridaLLMTool : CliktCommand() {
                 if (llmClient == null) {
                     logger.warn { "Interactive mode without API key - limited functionality" }
                 }
-                runInteractiveMode(context, router, parser, connector, collector, promptBuilder, llmClient, executor)
+
+                runInteractiveMode(connector, context, router, parser, collector, promptBuilder, llmClient, executor)
             }
         } finally {
             connector.disconnect()
@@ -245,7 +268,8 @@ class FridaLLMTool : CliktCommand() {
                 println(executor.formatOutput(execResult))
 
                 if (execResult.success) {
-                    println("""
+                    println(
+                        """
                     
                     ╔════════════════════════════════════════════════════════╗
                     ║         SSL Bypass Active - Testing Instructions       ║
@@ -274,7 +298,8 @@ class FridaLLMTool : CliktCommand() {
                     
                     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                     
-                    """.trimIndent())
+                    """.trimIndent()
+                    )
                 }
             }
         }
@@ -448,10 +473,10 @@ class FridaLLMTool : CliktCommand() {
     }
 
     private fun runInteractiveMode(
+        connector: FridaConnector,
         context: AppContext,
         router: QueryRouter,
         parser: QueryParser,
-        connector: FridaConnector,
         collector: ContextCollector,
         promptBuilder: PromptBuilder,
         llmClient: LLMClient?,
@@ -516,6 +541,30 @@ class FridaLLMTool : CliktCommand() {
                     continue
                 }
 
+                input.lowercase() == "storage" -> {
+                    println("\n💾 Storage Analysis:")
+                    if (context.storage != null) {
+                        val report = StorageCollector(connector)
+                            .generateSecurityReport(context.storage)
+                        println(report)
+                    } else {
+                        println("   Storage info not collected. Use -c FULL")
+                    }
+                    continue
+                }
+
+                input.lowercase() == "logs" -> {
+                    println("\n🔍 Starting log analysis...")
+                    println("Duration: 30 seconds (use 'analyze-logs <seconds>' for custom duration)")
+                    runBlocking {
+                        val analyzer = LogAnalyzer(connector)
+                        val result = analyzer.analyzeLogs(logDuration)
+                        analyzer.generateReport(result)
+                    }
+                    continue
+                }
+
+
                 input.lowercase().startsWith("setkey ") -> {
                     val key = input.substring(7).trim()
                     currentLLMClient = LLMClient(key)
@@ -530,7 +579,7 @@ class FridaLLMTool : CliktCommand() {
                     if (currentLLMClient == null) {
                         println("⚠️  No API key set. Use 'setkey <your-key>' first")
                     } else {
-                        processQuery(input, router, parser, connector, promptBuilder, currentLLMClient, executor)
+                        processQuery(input, router, parser, connector, promptBuilder, llmClient, executor)
                     }
                 } catch (e: Exception) {
                     println("❌ Error: ${e.message}")
@@ -542,7 +591,8 @@ class FridaLLMTool : CliktCommand() {
     }
 
     private fun printHelp() {
-        println("""
+        println(
+            """
         
         📖 Help - Available Commands:
         
@@ -563,11 +613,13 @@ class FridaLLMTool : CliktCommand() {
           bypass emulator detection
           intercept com.example.api.LoginService.login
           
-        """.trimIndent())
+        """.trimIndent()
+        )
     }
 
     private fun printBanner() {
-        println("""
+        println(
+            """
             ╔═══════════════════════════════════════════════╗
             ║     Frida LLM Tool - Research Project         ║
             ║     AI-Powered Mobile Instrumentation         ║
@@ -580,7 +632,8 @@ class FridaLLMTool : CliktCommand() {
             ║    🎯 Targeted   → 3-5s  (80% accuracy)       ║
             ║    🔎 Discovery  → 5-10s (70% accuracy)       ║
             ╚═══════════════════════════════════════════════╝
-        """.trimIndent())
+        """.trimIndent()
+        )
     }
 }
 

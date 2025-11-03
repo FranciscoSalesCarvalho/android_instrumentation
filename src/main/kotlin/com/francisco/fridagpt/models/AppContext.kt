@@ -11,6 +11,7 @@ data class AppContext(
     val classes: List<ClassInfo>,
     val frameworks: List<FrameworkInfo>,
     val manifest: ManifestInfo? = null,
+    val storage: StorageInfo? = null
 )
 
 /**
@@ -118,3 +119,70 @@ data class IntentFilter(
     val categories: List<String>,
     val data: List<String>,
 )
+
+/**
+* Informações de armazenamento
+*/
+@Serializable
+data class StorageInfo(
+    val databases: List<DatabaseInfo>,
+    val sharedPreferences: List<SharedPreferencesInfo>,
+    val filesDirectory: String,
+    val internalFiles: List<FileInfo>,
+    val externalFiles: List<FileInfo>,
+    val vulnerabilities: List<StorageVulnerability>
+)
+
+@Serializable
+data class DatabaseInfo(
+    val name: String,
+    val path: String,
+    val tables: List<String> = emptyList()
+)
+
+@Serializable
+data class SharedPreferencesInfo(
+    val name: String,
+    val path: String,
+    val keys: List<String>,
+    val hasSensitiveData: Boolean
+)
+
+@Serializable
+data class FileInfo(
+    val name: String,
+    val path: String,
+    val size: Long,
+    val isDirectory: Boolean = false
+)
+
+/**
+ * Vulnerabilidade de armazenamento detectada
+ */
+@Serializable
+data class StorageVulnerability(
+    val type: VulnerabilityType,
+    val severity: Severity,
+    val description: String,
+    val details: String,
+    val recommendation: String,
+    val location: String
+)
+
+@Serializable
+enum class VulnerabilityType {
+    INSECURE_SHARED_PREFERENCES,
+    UNENCRYPTED_DATABASE,
+    EXTERNAL_STORAGE_USAGE,
+    SUSPICIOUS_FILES,
+    WORLD_READABLE_FILES,
+    HARDCODED_SECRETS
+}
+
+@Serializable
+enum class Severity {
+    HIGH,
+    MEDIUM,
+    LOW,
+    INFO
+}
