@@ -1,6 +1,7 @@
 package com.francisco.fridagpt
 
 import com.francisco.fridagpt.core.*
+import com.francisco.fridagpt.core.SSLBypassOrchestrator.PhaseResult
 import com.francisco.fridagpt.llm.LLMClient
 import com.francisco.fridagpt.llm.PromptBuilder
 import com.francisco.fridagpt.models.AppContext
@@ -10,17 +11,30 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import java.io.File
 
 private val logger = KotlinLogging.logger {}
 
+// emulator -avd Root -writable-system
 class FridaLLMTool : CliktCommand() {
 
     private val packageName by option(
         "-p", "--package",
         help = "Target Android package name"
     ).required()
+
+    private val device by option(
+        "-d", "--device",
+        help = "Device ID (optional, uses USB by default)"
+    )
+
+    private val output by option(
+        "-o", "--output",
+        help = "Output file for context JSON"
+    )
 
     private val interactive by option(
         "-i", "--interactive",
@@ -42,8 +56,18 @@ class FridaLLMTool : CliktCommand() {
         help = "Generate script but don't execute"
     ).flag(default = false)
 
+    private val setupCertificates by option(
+        "--certificates",
+        help = "Setup user and system certificates"
+    ).flag(default = false)
+
     private val saveScript by option(
         "-s", "--save-script",
+        help = "Save generated script to file"
+    )
+
+    private val stacktrace by option(
+        "-e", "--stacktrace",
         help = "Save generated script to file"
     )
 
@@ -52,6 +76,7 @@ class FridaLLMTool : CliktCommand() {
 
         logger.info { "Target package: $packageName" }
 
+        // Conectar ao app via Frida
         val connector = FridaConnector(packageName)
 
         if (!connector.connect()) {
@@ -70,7 +95,6 @@ class FridaLLMTool : CliktCommand() {
             }
 
             // Inicializar componentes
-            val collector = ContextCollector(connector)
             val router = QueryRouter()
             val parser = QueryParser()
             val promptBuilder = PromptBuilder()
@@ -80,13 +104,11 @@ class FridaLLMTool : CliktCommand() {
             // Se há query direta, processar e sair
             query?.let { userQuery ->
                 logger.info { "Processing direct query: $userQuery" }
-                processQuery(
-                    userQuery, connector, collector, router, parser,
-                    promptBuilder, llmClient, executor
-                )
+                processQuery(userQuery, router, parser, connector, promptBuilder, llmClient, executor)
                 return@runBlocking
             }
 
+            val collector = ContextCollector(connector)
             val context = collector.collectFullContext()
 
             if (context == null) {
@@ -96,6 +118,22 @@ class FridaLLMTool : CliktCommand() {
 
             // Mostrar estatísticas
             collector.printStats(context)
+
+            // Salvar JSON se especificado
+            output?.let { path ->
+                val jsonStr = Json { prettyPrint = true }.encodeToString(context)
+
+                File(path).writeText(jsonStr)
+                logger.info { "Context saved to: $path" }
+            }
+
+            // Modo interativo
+            if (interactive) {
+                if (llmClient == null) {
+                    logger.warn { "Interactive mode without API key - limited functionality" }
+                }
+                runInteractiveMode(context, router, parser, connector, collector, promptBuilder, llmClient, executor)
+            }
         } finally {
             connector.disconnect()
         }
@@ -103,10 +141,9 @@ class FridaLLMTool : CliktCommand() {
 
     private suspend fun processQuery(
         query: String,
-        connector: FridaConnector,
-        collector: ContextCollector,
         router: QueryRouter,
         parser: QueryParser,
+        connector: FridaConnector,
         promptBuilder: PromptBuilder,
         llmClient: LLMClient?,
         executor: ScriptExecutor
@@ -121,25 +158,144 @@ class FridaLLMTool : CliktCommand() {
             println("\n⚠️  No API key provided - showing what would be sent to LLM")
         }
 
-        when (queryType) {
-            QueryRouter.QueryType.SPECIFIC -> {
-                println("\n✅ Specific query detected - Fast path!")
-                handleSpecificQuery(query, parser, promptBuilder, llmClient, executor)
+        println("\n✅ Specific query detected - Fast path!")
+        handleSpecificQuery(query, parser, connector, promptBuilder, llmClient, executor)
+    }
+
+    private suspend fun handleSpecificQuery(
+        query: String,
+        parser: QueryParser,
+        connector: FridaConnector,
+        promptBuilder: PromptBuilder,
+        llmClient: LLMClient?,
+        executor: ScriptExecutor
+    ) {
+        // Detectar se é SSL Pinning bypass
+        val isSSLBypass = query.lowercase().let { q ->
+            q.contains("ssl") || q.contains("pinning") ||
+                    q.contains("certificate") || q.contains("certificatepinner")
+        }
+
+        // Se for SSL bypass, usar o orquestrador especializado
+        if (isSSLBypass) {
+            handleSSLBypass(connector, llmClient, executor)
+            return
+        }
+
+        // Fluxo normal para outros tipos de hooks
+        handleNormalBypass(query, parser, promptBuilder, llmClient, executor)
+    }
+
+    /**
+     * Fluxo especializado para SSL Pinning Bypass
+     */
+    private suspend fun handleSSLBypass(
+        connector: FridaConnector,
+        llmClient: LLMClient?,
+        executor: ScriptExecutor
+    ) {
+        println("\n🔒 SSL Pinning Bypass Mode - Using specialized workflow")
+        println()
+
+        if (setupCertificates) {
+            println("\n" + "═".repeat(70))
+            println("User & System CA Certificate Setup")
+            println("═".repeat(70))
+            val certificates = setupCACertificates()
+
+            if (!certificates.success) {
+                println("❌ Setup certificates failed: ${certificates.message}")
+                return
+            } else {
+                println("✅ Setup certificates completed successfully")
             }
 
-            QueryRouter.QueryType.SEMI_SPECIFIC -> {
-                println("\n⚡ Semi-specific query - Targeted search")
-//                handleSemiSpecificQuery(query, collector, parser, promptBuilder, llmClient, executor)
-            }
+            println("\n" + "═".repeat(70))
+            println("Proxy Configuration")
+            println("═".repeat(70))
+            val proxy = setupProxy()
 
-            QueryRouter.QueryType.GENERIC -> {
-                println("\n🔎 Generic query - Full context collection")
-//                handleGenericQuery(query, collector, promptBuilder, llmClient, executor)
+            if (!proxy.success) {
+                println("❌ Proxy configuration failed: ${proxy.message}")
+                return
+            } else {
+                println("✅ Setup proxy completed successfully")
+            }
+        }
+
+        val orchestrator = SSLBypassOrchestrator(
+            connector = connector,
+            llmClient = llmClient,
+            dryRun = dryRun
+        )
+        val content = File(stacktrace.orEmpty()).runCatching {
+            readText()
+        }.getOrDefault("")
+        val result = orchestrator.execute(saveScript, content)
+
+        // Se tudo OK e não é dry-run, executar
+        if (result.allPhasesComplete && !dryRun && result.generatedScript != null) {
+            println()
+            print("🚀 Ready to execute SSL bypass script. Proceed? (Y/n): ")
+            val proceed = readLine()?.trim()?.lowercase()
+
+            if (proceed != "n" && proceed != "no") {
+                println("\n🚀 Executing script...")
+                val execResult = executor.execute(result.generatedScript!!, durationSeconds = 20)
+                println(executor.formatOutput(execResult))
+
+                if (execResult.success) {
+                    println("""
+                    
+                    ╔════════════════════════════════════════════════════════╗
+                    ║         SSL Bypass Active - Testing Instructions       ║
+                    ╚════════════════════════════════════════════════════════╝
+                    
+                    ✅ Frida script is running
+                    ✅ Proxy is configured
+                    ✅ CA certificate installed
+                    
+                    📱 Next Steps:
+                    1. Open the target app on your device
+                    2. Login or perform actions that use HTTPS
+                    3. Check Burp/mitmproxy for decrypted traffic
+                    
+                    ✅ Success indicators:
+                       • HTTPS requests visible in proxy
+                       • Traffic is decrypted (readable JSON/XML)
+                       • App works normally
+                    
+                    ❌ Failure indicators:
+                       • No traffic in proxy
+                       • SSL/certificate errors in app
+                       • App crashes
+                    
+                    Press Ctrl+C to stop when done testing
+                    
+                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    
+                    """.trimIndent())
+                }
+            }
+        }
+
+        // Cleanup prompt
+        if (!dryRun) {
+            println()
+            print("Remove proxy configuration? (y/N): ")
+            val cleanup = readLine()?.trim()?.lowercase()
+            if (cleanup == "y" || cleanup == "yes") {
+                val proxyManager = ProxyManager(device)
+                proxyManager.cleanup()
+                println("✅ Proxy configuration removed")
             }
         }
     }
 
-    private suspend fun handleSpecificQuery(
+    /**
+     * Fluxo normal para outros bypasses
+     */
+    private suspend fun handleNormalBypass(
         query: String,
         parser: QueryParser,
         promptBuilder: PromptBuilder,
@@ -232,180 +388,70 @@ class FridaLLMTool : CliktCommand() {
         }
     }
 
-//    private suspend fun handleSemiSpecificQuery(
-//        query: String,
-//        collector: ContextCollector,
-//        parser: QueryParser,
-//        promptBuilder: PromptBuilder,
-//        llmClient: LLMClient?,
-//        executor: ScriptExecutor
-//    ) {
-//        println("\n🔍 Extracting hints from query...")
-//        val hints = extractQueryHints(query)
-//        println("Keywords: ${hints.joinToString(", ")}")
-//
-//        println("\n📊 Collecting context...")
-//        val context = collector.collectFullContext()
-//
-//        if (context == null) {
-//            println("❌ Failed to collect context")
-//            return
-//        }
-//
-//        // Filtrar classes relevantes
-//        val relevantClasses = context.classes.filter { classInfo ->
-//            hints.any { hint ->
-//                classInfo.name.contains(hint, ignoreCase = true)
-//            }
-//        }
-//
-//        println("\n✅ Found ${relevantClasses.size} relevant classes:")
-//        relevantClasses.take(10).forEach {
-//            println("   - ${it.name}")
-//        }
-//
-//        // Coletar métodos das classes relevantes
-//        println("\n🔄 Collecting methods from relevant classes...")
-//        val classesWithMethods = relevantClasses.take(5).map { classInfo ->
-//            val methods = collector.colle(classInfo.name)
-//            println("   ${classInfo.name}: ${methods.size} methods")
-//            classInfo.copy(methods = methods)
-//        }
-//
-//        // Gerar prompt
-//        val prompt = promptBuilder.buildContextualPrompt(query, classesWithMethods, context)
-//
-//        if (llmClient == null) {
-//            println("\n📝 Prompt that would be sent:")
-//            println("━".repeat(50))
-//            println(prompt.take(800) + "...")
-//            return
-//        }
-//
-//        println("\n🤖 Generating Frida script with Claude...")
-//        val generated = llmClient.generateScript(prompt, maxTokens = 8192)
-//
-//        if (generated == null) {
-//            println("❌ Failed to generate script")
-//            return
-//        }
-//
-//        println("\n✅ Script generated (${generated.tokensUsed} tokens used)")
-//
-//        // Salvar se solicitado
-//        saveScript?.let { path ->
-//            File(path).writeText(generated.script)
-//            println("💾 Script saved to: $path")
-//        }
-//
-//        // Mostrar script
-//        println("\n📜 Generated Script:")
-//        println("━".repeat(50))
-//        println(generated.script)
-//        println("━".repeat(50))
-//
-//        // Validar
-//        val validation = executor.validateScript(generated.script)
-//        validation.printReport()
-//
-//        if (!validation.valid) {
-//            println("\n⚠️  Script has validation errors - execution skipped")
-//            return
-//        }
-//
-//        // Executar se não for dry-run
-//        if (!dryRun) {
-//            println("\n🚀 Executing script...")
-//            val result = executor.execute(generated.script, durationSeconds = 15)
-//            println(executor.formatOutput(result))
-//        } else {
-//            println("\n ℹ️  Dry-run mode - script not executed")
-//        }
-//    }
+    private suspend fun setupCACertificates(): PhaseResult {
+        return try {
+            println("📜 Setting up User CA certificate...")
+            println()
 
-//    private suspend fun handleGenericQuery(
-//        query: String,
-//        collector: ContextCollector,
-//        promptBuilder: PromptBuilder,
-//        llmClient: LLMClient?,
-//        executor: ScriptExecutor
-//    ) {
-//        println("\n📊 Collecting full context for generic query...")
-//
-//        val context = collector.collectForQuery(query)
-//
-//        if (context == null) {
-//            println("❌ Failed to collect context")
-//            return
-//        }
-//
-//        collector.printStats(context)
-//
-//        // Gerar prompt
-//        val prompt = promptBuilder.buildGenericPrompt(query, context)
-//
-//        if (llmClient == null) {
-//            println("\n📝 Prompt that would be sent:")
-//            println("━".repeat(50))
-//            println(prompt.take(1000) + "...")
-//            return
-//        }
-//
-//        println("\n🤖 Generating Frida script with Claude...")
-//        val generated = llmClient.generateScript(prompt, maxTokens = 8192)
-//
-//        if (generated == null) {
-//            println("❌ Failed to generate script")
-//            return
-//        }
-//
-//        println("\n✅ Script generated (${generated.tokensUsed} tokens used)")
-//
-//        // Salvar se solicitado
-//        saveScript?.let { path ->
-//            File(path).writeText(generated.script)
-//            println("💾 Script saved to: $path")
-//        }
-//
-//        // Mostrar script
-//        println("\n📜 Generated Script:")
-//        println("━".repeat(50))
-//        println(generated.script)
-//        println("━".repeat(50))
-//
-//        // Validar
-//        val validation = executor.validateScript(generated.script)
-//        validation.printReport()
-//
-//        if (!validation.valid) {
-//            println("\n⚠️  Script has validation errors - execution skipped")
-//            return
-//        }
-//
-//        // Executar se não for dry-run
-//        if (!dryRun) {
-//            println("\n🚀 Executing script...")
-//            val result = executor.execute(generated.script, durationSeconds = 20)
-//            println(executor.formatOutput(result))
-//        } else {
-//            println("\n ℹ️  Dry-run mode - script not executed")
-//        }
-//    }
+            val caInstaller = CAInstaller(device)
+            val caResult = caInstaller.setupBurpCertificate()
 
-    private fun extractQueryHints(query: String): List<String> {
-        val words = query.lowercase()
-            .split(Regex("\\s+"))
-            .filter { it.length > 3 }
-            .filterNot { it in listOf("hook", "bypass", "method", "class", "return", "from", "with", "and", "the") }
+            if (caResult.isComplete) {
+                PhaseResult(
+                    success = true,
+                    message = "User CA certificate installed",
+                    data = caResult
+                )
+            } else {
+                PhaseResult(
+                    success = false,
+                    message = "User CA setup incomplete: " +
+                            "Burp=${caResult.burpRunning}, " +
+                            "Downloaded=${caResult.certDownloaded}, " +
+                            "Installed=${caResult.certInstalled}",
+                    data = caResult
+                )
+            }
+        } catch (e: Exception) {
+            logger.error(e) { "User CA setup failed" }
+            PhaseResult(success = false, message = e.message ?: "Unknown error")
+        }
+    }
 
-        return words.distinct()
+    private suspend fun setupProxy(): PhaseResult {
+        return try {
+            println("📡 Configuring proxy on device...")
+            println()
+
+            val proxyManager = ProxyManager(device)
+            val proxyResult = proxyManager.setupForSSLBypass()
+
+            if (proxyResult.isReady) {
+                PhaseResult(
+                    success = true,
+                    message = "Proxy configured and reachable",
+                    data = proxyResult
+                )
+            } else {
+                PhaseResult(
+                    success = false,
+                    message = "Proxy setup incomplete: " +
+                            "Configured=${proxyResult.proxyConfigured}, " +
+                            "Reachable=${proxyResult.proxyReachable}",
+                    data = proxyResult
+                )
+            }
+        } catch (e: Exception) {
+            logger.error(e) { "Proxy setup failed" }
+            PhaseResult(success = false, message = e.message ?: "Unknown error")
+        }
     }
 
     private fun runInteractiveMode(
-        connector: FridaConnector,
         context: AppContext,
         router: QueryRouter,
         parser: QueryParser,
+        connector: FridaConnector,
         collector: ContextCollector,
         promptBuilder: PromptBuilder,
         llmClient: LLMClient?,
@@ -484,8 +530,7 @@ class FridaLLMTool : CliktCommand() {
                     if (currentLLMClient == null) {
                         println("⚠️  No API key set. Use 'setkey <your-key>' first")
                     } else {
-                        processQuery(input, connector, collector, router, parser,
-                            promptBuilder, currentLLMClient, executor)
+                        processQuery(input, router, parser, connector, promptBuilder, currentLLMClient, executor)
                     }
                 } catch (e: Exception) {
                     println("❌ Error: ${e.message}")
@@ -527,7 +572,7 @@ class FridaLLMTool : CliktCommand() {
             ║     Frida LLM Tool - Research Project         ║
             ║     AI-Powered Mobile Instrumentation         ║
             ║                                               ║
-            ║  🆕 Multi-Hook Support:                       ║
+            ║     Multi-Hook Support:                       ║
             ║     Hook multiple methods in one query!       ║
             ║                                               ║
             ║  Smart Query Routing:                         ║

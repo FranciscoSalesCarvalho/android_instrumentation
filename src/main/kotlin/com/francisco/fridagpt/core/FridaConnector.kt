@@ -16,7 +16,8 @@ private val logger = KotlinLogging.logger {}
  */
 
 class FridaConnector(
-    val packageName: String
+    val packageName: String,
+    private val deviceId: String? = null // null = USB mode
 ) {
     private var isConnected = false
     private var process: Process? = null
@@ -205,7 +206,11 @@ class FridaConnector(
 
     private fun isAppRunning(): Boolean {
         return try {
-            val command = listOf("frida-ps", "-Ua")
+            val command = if (deviceId != null) {
+                listOf("frida-ps", "-D", deviceId, "-a")
+            } else {
+                listOf("frida-ps", "-Ua")
+            }
 
             val proc = ProcessBuilder(command).start()
             val output = proc.inputStream.bufferedReader().readText()
@@ -234,7 +239,13 @@ class FridaConnector(
     private fun buildFridaCommand(scriptPath: String): List<String> {
         return buildList {
             add("frida")
-            add("-U")
+            // Device selection
+            if (deviceId != null) {
+                add("-D")
+                add(deviceId)
+            } else {
+                add("-U") // USB mode
+            }
             add("-l")
             add(scriptPath)
             add("-f")

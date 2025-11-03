@@ -186,12 +186,89 @@ hook Class3.method3() return false'
   -q 'hook com.example.security.RootChecker.isRooted() return false, hook com.example.security.RootDetector.checkRoot() return false, hook com.example.utils.SecurityUtils.hasRootAccess() return false'"
 ```
 
-### SSL Pinning Bypass
+### SSL Pinning Bypass 🆕🔒
+
+**NEW: Complete automated SSL bypass setup!**
+
+#### Quick Start (Recommended)
+
+Run the complete end-to-end test:
+
+```bash
+chmod +x test_ssl_e2e.sh
+./test_ssl_e2e.sh com.example.app YOUR_API_KEY
+```
+
+This will automatically:
+1. ✅ Check prerequisites (adb, device, Burp)
+2. ✅ Download Burp CA certificate
+3. ✅ Convert to Android format
+4. ✅ Install on device (with guidance)
+5. ✅ Configure proxy
+6. ✅ Generate SSL bypass script
+7. ✅ Execute and test
+8. ✅ Cleanup
+
+#### Manual Steps
+
+**Step 1: Setup CA Certificate (One-time)**
+
+```bash
+# Start Burp Suite on port 8080 first
+./gradlew run --args="--setup-ca"
+```
+
+This will:
+- Download Burp's CA cert from http://burp/cert
+- Convert to Android format
+- Push to device
+- Guide you through installation
+
+**Step 2: Run SSL Bypass**
 
 ```bash
 ./gradlew run --args="-p com.example.app \
+  -k YOUR_API_KEY \
   -q 'bypass ssl pinning'"
 ```
+
+**Step 3: Test**
+
+1. Open the app
+2. Perform HTTPS requests
+3. Check Burp for decrypted traffic
+
+**Step 4: Cleanup**
+
+```bash
+./gradlew run --args="--cleanup"
+```
+
+#### Prerequisites
+
+**Before starting:**
+
+```bash
+# 1. Start Burp Suite
+#    Proxy → Options → Listener on 127.0.0.1:8080
+
+# 2. OR start mitmproxy
+mitmproxy -p 8080
+
+# 3. Device connected
+adb devices
+```
+
+**What happens automatically:**
+1. ✅ Proxy configuration (`adb shell settings put global http_proxy 127.0.0.1:8080`)
+2. ✅ Port forwarding (`adb reverse tcp:8080 tcp:8080`)
+3. ✅ CA certificate download and conversion
+4. ✅ Certificate installation guidance
+5. ✅ Connectivity testing
+6. ✅ SSL bypass script generation
+7. ✅ Script execution
+
+#### Troubleshooting
 
 ### Method Logging
 
