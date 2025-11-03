@@ -4,6 +4,7 @@ import com.francisco.fridagpt.collectors.AppInfoCollector
 import com.francisco.fridagpt.collectors.ClassCollector
 import com.francisco.fridagpt.collectors.FrameworkDetector
 import com.francisco.fridagpt.collectors.ManifestCollector
+import com.francisco.fridagpt.collectors.StorageCollector
 import com.francisco.fridagpt.models.AppContext
 import com.francisco.fridagpt.models.ClassCategory
 import kotlinx.coroutines.coroutineScope
@@ -16,6 +17,7 @@ class ContextCollector(private val connector: FridaConnector) {
     private val classCollector = ClassCollector(connector)
     private val manifestCollector = ManifestCollector(connector)
     private val frameworkDetector = FrameworkDetector(connector)
+    private val storageCollector = StorageCollector(connector)
 
     /**
      * Coleta contexto básico (apenas essencial - mais rápido)
@@ -28,6 +30,7 @@ class ContextCollector(private val connector: FridaConnector) {
             val classes = classCollector.collectAppClassesOnly()
             val manifest = manifestCollector.collect()
             val frameworks = frameworkDetector.detect()
+            val storage = storageCollector.collect()
 
             if (appInfo == null) {
                 logger.error { "Failed to collect app info" }
@@ -42,6 +45,7 @@ class ContextCollector(private val connector: FridaConnector) {
                 classes = classes,
                 frameworks = frameworks,
                 manifest = manifest,
+                storage = storage,
             )
         } catch (e: Exception) {
             logger.error(e) { "Basic context collection failed: ${e.message}" }
