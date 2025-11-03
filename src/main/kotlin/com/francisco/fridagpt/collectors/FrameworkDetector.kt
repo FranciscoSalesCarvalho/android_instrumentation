@@ -125,7 +125,9 @@ class FrameworkDetector(
                 });
                 
                 console.log("[+] Detected " + frameworks.length + " frameworks");
+                console.log("UFAM");
                 console.log(JSON.stringify(frameworks));
+                console.log("UFAM");
             });
         """.trimIndent()
     }
