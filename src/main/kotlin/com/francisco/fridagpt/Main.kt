@@ -7,6 +7,8 @@ import com.francisco.fridagpt.core.SSLBypassOrchestrator.PhaseResult
 import com.francisco.fridagpt.llm.LLMClient
 import com.francisco.fridagpt.llm.PromptBuilder
 import com.francisco.fridagpt.models.AppContext
+import com.francisco.fridagpt.models.ClassInfo
+import com.francisco.fridagpt.models.MethodInfo
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -534,23 +536,67 @@ class FridaLLMTool : CliktCommand() {
             hints.any { hint ->
                 classInfo.name.contains(hint, ignoreCase = true)
             }
-        }
+        }.filter { !it.name.contains("$") && !it.name.contains("kt", ignoreCase = true) }
 
         println("\n✅ Found ${relevantClasses.size} relevant classes:")
         relevantClasses.take(10).forEach {
             println("   - ${it.name}")
         }
 
+        // Detecta se precisa de múltiplos hooks
+        val separators = listOf(
+            " AND " to Regex("""\s+AND\s+""", RegexOption.IGNORE_CASE),
+            " OR " to Regex("""\s+OR\s+""", RegexOption.IGNORE_CASE),
+            "," to Regex(""",\s*"""),
+            ";" to Regex(""";\s*"""),
+            "\n" to Regex("""\n+""")
+        )
+
+        var needsMultiHooks = false
+        for ((_, regex) in separators) {
+            if (regex.containsMatchIn(query)) {
+                needsMultiHooks = true
+                break
+            }
+        }
+
+        if (needsMultiHooks) {
+            println("\n🎯 Multi-hook scenario detected!")
+            println("   Will collect ALL related methods for comprehensive hooking")
+        }
+
         // Coletar métodos das classes relevantes
         println("\n🔄 Collecting methods from relevant classes...")
-        val classesWithMethods = relevantClasses.take(5).map { classInfo ->
+        val classesWithMethods = relevantClasses.take(if (needsMultiHooks) 10 else 5).map { classInfo ->
             val methods = collector.collectMethodsForClass(classInfo.name)
-            println("   ${classInfo.name}: ${methods.size} methods")
-            classInfo.copy(methods = methods)
+
+            // Filtra métodos relacionados se necessário
+            val filteredMethods = if (needsMultiHooks) {
+                filterRelatedMethods(methods, hints)
+            } else {
+                methods
+            }.filter { !it.name.contains("$") }
+
+            println("   ${classInfo.name}: ${filteredMethods.size} methods")
+            classInfo.copy(methods = filteredMethods)
+        }
+
+        val totalMethods = classesWithMethods.sumOf { it.methods.size }
+
+        if (needsMultiHooks) {
+            println("\n📦 Multi-hook preparation:")
+            println("   • ${classesWithMethods.size} classes")
+            println("   • $totalMethods methods to hook")
+            println("   • Will generate comprehensive bypass script")
         }
 
         // Gerar prompt
-        val prompt = promptBuilder.buildContextualPrompt(query, classesWithMethods, context)
+        val prompt = promptBuilder.buildContextualPrompt(
+            query = query,
+            relevantClasses = classesWithMethods,
+            context = context,
+            needsMultipleHooks = needsMultiHooks
+        )
 
         if (llmClient == null) {
             println("\n📝 Prompt that would be sent:")
@@ -568,6 +614,10 @@ class FridaLLMTool : CliktCommand() {
         }
 
         println("\n✅ Script generated (${generated.tokensUsed} tokens used)")
+
+        // Analisa quantos hooks foram gerados
+        val hooksCount = countHooksInScript(generated.script)
+        println("   📍 Detected $hooksCount hook(s) in generated script")
 
         // Salvar se solicitado
         saveScript?.let { path ->
@@ -595,8 +645,19 @@ class FridaLLMTool : CliktCommand() {
             println("\n🚀 Executing script...")
             val result = executor.execute(generated.script, durationSeconds = 15)
             println(executor.formatOutput(result))
+
+            // Sumário de execução para múltiplos hooks
+            if (needsMultiHooks && result.success) {
+                println("\n📊 Multi-hook Execution Summary:")
+                println("   ✓ Expected hooks: $totalMethods")
+                println("   ✓ Script executed successfully")
+                println("   💡 Check output above for individual hook status")
+            }
         } else {
             println("\n ℹ️  Dry-run mode - script not executed")
+            if (needsMultiHooks) {
+                println("   💡 This script would hook $totalMethods methods")
+            }
         }
     }
 
@@ -607,6 +668,37 @@ class FridaLLMTool : CliktCommand() {
             .filterNot { it in listOf("hook", "bypass", "method", "class", "return", "from", "with", "and", "the") }
 
         return words.distinct()
+    }
+
+    /**
+     * Filtra métodos relacionados baseado em keywords
+     */
+    private fun filterRelatedMethods(
+        methods: List<MethodInfo>,
+        keywords: List<String>
+    ): List<MethodInfo> {
+        val filtered = methods.filter { method ->
+            keywords.any { keyword ->
+                method.name.contains(keyword, ignoreCase = true) ||
+                        method.returnType.contains(keyword, ignoreCase = true)
+            }
+        }
+
+        // Se filtrou muito, retorna os principais
+        return if (filtered.size >= 3) filtered else methods.take(10)
+    }
+
+    /**
+     * Conta quantos hooks existem no script gerado
+     */
+    private fun countHooksInScript(script: String): Int {
+        // Conta padrões de hook: ".implementation = "
+        val implementationCount = script.split(".implementation").size - 1
+
+        // Conta padrões alternativos: ".overload"
+        val overloadCount = script.split(".overload").size - 1
+
+        return maxOf(implementationCount, overloadCount, 1)
     }
 
     private suspend fun runInteractiveMode(

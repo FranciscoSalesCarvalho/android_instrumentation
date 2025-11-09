@@ -17,30 +17,30 @@ class PromptBuilder {
      */
     fun buildSpecificPrompt(parsed: ParsedQuery): String {
         return """
-You are an expert in Frida dynamic instrumentation for Android.
-
-Generate a Frida script in JavaScript to accomplish the following task:
-
-TARGET:
-- Class: ${parsed.className}
-- Method: ${parsed.methodName}
-${if (parsed.parameters.isNotEmpty()) "- Parameters: ${parsed.parameters.joinToString(", ")}" else ""}
-${if (parsed.returnType != null) "- Return Type: ${parsed.returnType}" else ""}
-
-ACTION:
-${getActionDescription(parsed.action, parsed.returnValue)}
-
-REQUIREMENTS:
-1. Use Java.perform() wrapper
-2. Hook the exact method specified
-3. Include error handling (try-catch)
-4. Add console.log statements to show when hook is triggered
-5. Log method parameters when called
-6. Implement the required action
-7. Keep code clean and well-commented
-
-OUTPUT:
-Provide ONLY the JavaScript code, no explanations before or after.
+            You are an expert in Frida dynamic instrumentation for Android.
+            
+            Generate a Frida script in JavaScript to accomplish the following task:
+            
+            TARGET:
+            - Class: ${parsed.className}
+            - Method: ${parsed.methodName}
+            ${if (parsed.parameters.isNotEmpty()) "- Parameters: ${parsed.parameters.joinToString(", ")}" else ""}
+            ${if (parsed.returnType != null) "- Return Type: ${parsed.returnType}" else ""}
+            
+            ACTION:
+            ${getActionDescription(parsed.action, parsed.returnValue)}
+            
+            REQUIREMENTS:
+            1. Use Java.perform() wrapper
+            2. Hook the exact method specified
+            3. Include error handling (try-catch)
+            4. Add console.log statements to show when hook is triggered
+            5. Log method parameters when called
+            6. Implement the required action
+            7. Keep code clean and well-commented
+            
+            OUTPUT:
+            Provide ONLY the JavaScript code, no explanations before or after.
         """.trimIndent()
     }
 
@@ -50,66 +50,66 @@ Provide ONLY the JavaScript code, no explanations before or after.
     fun buildMultiHookPrompt(multiHook: MultiHookQuery): String {
         val hooksDescription = multiHook.hooks.mapIndexed { index, hook ->
             """
-Hook ${index + 1}:
-  - Class: ${hook.className}
-  - Method: ${hook.methodName}
-  ${if (hook.parameters.isNotEmpty()) "- Parameters: ${hook.parameters.joinToString(", ")}" else ""}
-  - Action: ${getActionDescription(hook.action, hook.returnValue)}
+                Hook ${index + 1}:
+                  - Class: ${hook.className}
+                  - Method: ${hook.methodName}
+                  ${if (hook.parameters.isNotEmpty()) "- Parameters: ${hook.parameters.joinToString(", ")}" else ""}
+                  - Action: ${getActionDescription(hook.action, hook.returnValue)}
             """.trimIndent()
         }.joinToString("\n\n")
 
         return """
-You are an expert in Frida dynamic instrumentation for Android.
-
-Generate a Frida script in JavaScript to accomplish ALL of the following tasks:
-
-TARGETS (${multiHook.hooks.size} hooks required):
-$hooksDescription
-
-REQUIREMENTS:
-1. Use a single Java.perform() wrapper for all hooks
-2. Hook ALL ${multiHook.hooks.size} methods specified above
-3. Include error handling (try-catch) for each hook
-4. Add console.log statements to show when each hook is triggered
-5. Log the class and method name for each hook
-6. Implement the required action for each method
-7. If any hook fails, continue with the others (don't crash the script)
-8. Keep code clean and well-commented
-9. Number each hook (// Hook 1, // Hook 2, etc.)
-
-EXAMPLE STRUCTURE:
-```javascript
-Java.perform(function() {
-    console.log("[+] Starting multi-hook script");
-    
-    // Hook 1: Class1.method1
-    try {
-        var Class1 = Java.use("...");
-        Class1.method1.implementation = function() {
-            console.log("[Hook 1] Class1.method1 called");
-            // action
-        };
-    } catch(e) {
-        console.error("[Hook 1] Failed: " + e);
-    }
-    
-    // Hook 2: Class2.method2
-    try {
-        var Class2 = Java.use("...");
-        Class2.method2.implementation = function() {
-            console.log("[Hook 2] Class2.method2 called");
-            // action
-        };
-    } catch(e) {
-        console.error("[Hook 2] Failed: " + e);
-    }
-    
-    console.log("[+] All hooks installed");
-});
-```
-
-OUTPUT:
-Provide ONLY the JavaScript code, no explanations before or after.
+                You are an expert in Frida dynamic instrumentation for Android.
+                
+                Generate a Frida script in JavaScript to accomplish ALL of the following tasks:
+                
+                TARGETS (${multiHook.hooks.size} hooks required):
+                $hooksDescription
+                
+                REQUIREMENTS:
+                1. Use a single Java.perform() wrapper for all hooks
+                2. Hook ALL ${multiHook.hooks.size} methods specified above
+                3. Include error handling (try-catch) for each hook
+                4. Add console.log statements to show when each hook is triggered
+                5. Log the class and method name for each hook
+                6. Implement the required action for each method
+                7. If any hook fails, continue with the others (don't crash the script)
+                8. Keep code clean and well-commented
+                9. Number each hook (// Hook 1, // Hook 2, etc.)
+                
+                EXAMPLE STRUCTURE:
+                ```javascript
+                Java.perform(function() {
+                    console.log("[+] Starting multi-hook script");
+                    
+                    // Hook 1: Class1.method1
+                    try {
+                        var Class1 = Java.use("...");
+                        Class1.method1.implementation = function() {
+                            console.log("[Hook 1] Class1.method1 called");
+                            // action
+                        };
+                    } catch(e) {
+                        console.error("[Hook 1] Failed: " + e);
+                    }
+                    
+                    // Hook 2: Class2.method2
+                    try {
+                        var Class2 = Java.use("...");
+                        Class2.method2.implementation = function() {
+                            console.log("[Hook 2] Class2.method2 called");
+                            // action
+                        };
+                    } catch(e) {
+                        console.error("[Hook 2] Failed: " + e);
+                    }
+                    
+                    console.log("[+] All hooks installed");
+                });
+                ```
+                
+                OUTPUT:
+                Provide ONLY the JavaScript code, no explanations before or after.
         """.trimIndent()
     }
 
@@ -119,7 +119,8 @@ Provide ONLY the JavaScript code, no explanations before or after.
     fun buildContextualPrompt(
         query: String,
         relevantClasses: List<ClassInfo>,
-        context: AppContext
+        context: AppContext,
+        needsMultipleHooks: Boolean = false
     ): String {
         val classesInfo = relevantClasses.take(5).joinToString("\n") { classInfo ->
             val methodsInfo = if (classInfo.methods.isNotEmpty()) {
@@ -130,42 +131,50 @@ Provide ONLY the JavaScript code, no explanations before or after.
                 "  (methods not collected)"
             }
             """
-  Class: ${classInfo.name}
-    Methods:
-      $methodsInfo
+              Class: ${classInfo.name}
+                Methods:
+                  $methodsInfo
             """.trimIndent()
         }
 
         return """
-You are an expert in Frida dynamic instrumentation for Android.
-
-USER REQUEST:
-"$query"
-
-APP CONTEXT:
-- Package: ${context.appInfo.packageName}
-- Debuggable: ${context.appInfo.isDebuggable}
-
-DETECTED FRAMEWORKS:
-${context.frameworks.take(5).joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
-
-RELEVANT CLASSES FOUND:
-$classesInfo
-
-TASK:
-Analyze the user request and the available classes/methods, then generate a Frida script to accomplish the task.
-
-REQUIREMENTS:
-1. Use Java.perform() wrapper
-2. Hook the most appropriate method(s) to achieve the goal
-3. Include error handling
-4. Add informative console.log statements
-5. If multiple methods need to be hooked, hook all of them
-6. Consider the frameworks detected when writing the script
-7. Be specific - use the actual class and method names from the context
-
-OUTPUT:
-Provide ONLY the JavaScript code, no explanations.
+            You are an expert in Frida dynamic instrumentation for Android.
+            
+            USER REQUEST:
+            "$query"
+            
+            APP CONTEXT:
+            - Package: ${context.appInfo.packageName}
+            - Debuggable: ${context.appInfo.isDebuggable}
+            
+            DETECTED FRAMEWORKS:
+            ${context.frameworks.take(5).joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
+            
+            RELEVANT CLASSES FOUND:
+            $classesInfo
+            
+            TASK:
+            Analyze the user request and the available classes/methods, then generate a Frida script to accomplish the task.
+            
+            ${
+            if (needsMultipleHooks) """
+            IMPORTANT - MULTIPLE HOOKS REQUIRED:
+            The user's request suggests hooking multiple related methods. Consider:
+            1.Hook just the methods asked by the user.
+                """ 
+                else ""
+            }
+            REQUIREMENTS:
+            1. Use Java.perform() wrapper
+            2. Hook the most appropriate method(s) to achieve the goal
+            3. Include error handling
+            4. Add informative console.log statements
+            5. If multiple methods need to be hooked, hook all of them
+            6. Consider the frameworks detected when writing the script
+            7. Be specific - use the actual class and method names from the context
+            
+            OUTPUT:
+            Provide ONLY the JavaScript code, no explanations.
         """.trimIndent()
     }
 
@@ -179,42 +188,42 @@ Provide ONLY the JavaScript code, no explanations.
             .joinToString("\n") { "- ${it.name}" }
 
         return """
-You are an expert in Frida dynamic instrumentation for Android.
-
-USER REQUEST:
-"$query"
-
-APP INFORMATION:
-- Package: ${context.appInfo.packageName}
-- Target SDK: ${context.appInfo.targetSdk}
-- Debuggable: ${context.appInfo.isDebuggable}
-
-DETECTED FRAMEWORKS:
-${context.frameworks.joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
-
-APP CLASSES (sample):
-$appClasses
-... (${context.classes.size} total classes)
-
-TASK:
-Based on the user request and app information, generate a Frida script to accomplish the goal.
-You may need to make educated guesses about which classes/methods to hook based on common Android patterns.
-
-For example:
-- Emulator detection: often in Application class, SecurityCheck, DeviceValidator classes
-- Root detection: RootChecker, SecurityManager classes  
-- SSL Pinning: OkHttpClient, CertificatePinner, custom network classes
-
-REQUIREMENTS:
-1. Use Java.perform() wrapper
-2. Hook appropriate methods to achieve the goal
-3. Include error handling for class/method not found
-4. Add console.log statements
-5. Try multiple common patterns if needed
-6. Comment the code explaining what each hook does
-
-OUTPUT:
-Provide ONLY the JavaScript code, no explanations.
+            You are an expert in Frida dynamic instrumentation for Android.
+            
+            USER REQUEST:
+            "$query"
+            
+            APP INFORMATION:
+            - Package: ${context.appInfo.packageName}
+            - Target SDK: ${context.appInfo.targetSdk}
+            - Debuggable: ${context.appInfo.isDebuggable}
+            
+            DETECTED FRAMEWORKS:
+            ${context.frameworks.joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
+            
+            APP CLASSES (sample):
+            $appClasses
+            ... (${context.classes.size} total classes)
+            
+            TASK:
+            Based on the user request and app information, generate a Frida script to accomplish the goal.
+            You may need to make educated guesses about which classes/methods to hook based on common Android patterns.
+            
+            For example:
+            - Emulator detection: often in Application class, SecurityCheck, DeviceValidator classes
+            - Root detection: RootChecker, SecurityManager classes  
+            - SSL Pinning: OkHttpClient, CertificatePinner, custom network classes
+            
+            REQUIREMENTS:
+            1. Use Java.perform() wrapper
+            2. Hook appropriate methods to achieve the goal
+            3. Include error handling for class/method not found
+            4. Add console.log statements
+            5. Try multiple common patterns if needed
+            6. Comment the code explaining what each hook does
+            
+            OUTPUT:
+            Provide ONLY the JavaScript code, no explanations.
         """.trimIndent()
     }
 
