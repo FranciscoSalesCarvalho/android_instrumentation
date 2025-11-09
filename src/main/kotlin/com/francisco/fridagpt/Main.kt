@@ -13,6 +13,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
+import com.sun.tools.javac.util.List.collector
 import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
@@ -91,7 +92,10 @@ class FridaLLMTool : CliktCommand() {
         logger.info { "Target package: $packageName" }
 
         // Conectar ao app via Frida
-        val connector = FridaConnector(packageName)
+        val connector = FridaConnector(
+            packageName = packageName,
+            deviceId = device,
+        )
 
         if (!connector.connect()) {
             logger.error { "Failed to connect to $packageName" }
@@ -114,6 +118,7 @@ class FridaLLMTool : CliktCommand() {
             val promptBuilder = PromptBuilder()
             val executor = ScriptExecutor(connector)
             val llmClient = if (key != null) LLMClient(key) else null
+            val collector = ContextCollector(connector)
 
             if (analyzeLogs) {
                 logger.info { "Starting log analysis..." }
@@ -126,27 +131,17 @@ class FridaLLMTool : CliktCommand() {
             // Se há query direta, processar e sair
             query?.let { userQuery ->
                 logger.info { "Processing direct query: $userQuery" }
-                processQuery(userQuery, router, parser, connector, promptBuilder, llmClient, executor)
+                processQuery(
+                    query = userQuery,
+                    connector = connector,
+                    collector = collector,
+                    router = router,
+                    parser = parser,
+                    promptBuilder = promptBuilder,
+                    llmClient = llmClient,
+                    executor = executor
+                )
                 return@runBlocking
-            }
-
-            val collector = ContextCollector(connector)
-            val context = collector.collectFullContext()
-
-            if (context == null) {
-                logger.error { "Failed to collect context" }
-                return@runBlocking
-            }
-
-            // Mostrar estatísticas
-            collector.printStats(context)
-
-            // Salvar JSON se especificado
-            output?.let { path ->
-                val jsonStr = Json { prettyPrint = true }.encodeToString(context)
-
-                File(path).writeText(jsonStr)
-                logger.info { "Context saved to: $path" }
             }
 
             // Modo interativo
@@ -155,7 +150,15 @@ class FridaLLMTool : CliktCommand() {
                     logger.warn { "Interactive mode without API key - limited functionality" }
                 }
 
-                runInteractiveMode(connector, context, router, parser, collector, promptBuilder, llmClient, executor)
+                runInteractiveMode(
+                    connector = connector,
+                    router = router,
+                    parser = parser,
+                    collector = collector,
+                    promptBuilder = promptBuilder,
+                    llmClient = llmClient,
+                    executor = executor
+                )
             }
         } finally {
             connector.disconnect()
@@ -164,9 +167,10 @@ class FridaLLMTool : CliktCommand() {
 
     private suspend fun processQuery(
         query: String,
+        connector: FridaConnector,
+        collector: ContextCollector,
         router: QueryRouter,
         parser: QueryParser,
-        connector: FridaConnector,
         promptBuilder: PromptBuilder,
         llmClient: LLMClient?,
         executor: ScriptExecutor
@@ -181,8 +185,32 @@ class FridaLLMTool : CliktCommand() {
             println("\n⚠️  No API key provided - showing what would be sent to LLM")
         }
 
-        println("\n✅ Specific query detected - Fast path!")
-        handleSpecificQuery(query, parser, connector, promptBuilder, llmClient, executor)
+        when (queryType) {
+            QueryRouter.QueryType.SPECIFIC -> {
+                println("\n✅ Specific query detected - Fast path!")
+                handleSpecificQuery(
+                    query = query,
+                    parser = parser,
+                    connector = connector,
+                    promptBuilder = promptBuilder,
+                    llmClient = llmClient,
+                    executor = executor
+                )
+            }
+
+            QueryRouter.QueryType.SEMI_SPECIFIC -> {
+                println("\n⚡ Semi-specific query - Targeted search")
+                handleSemiSpecificQuery(
+                    query = query,
+                    collector = collector,
+                    promptBuilder = promptBuilder,
+                    llmClient = llmClient,
+                    executor = executor
+                )
+            }
+
+            QueryRouter.QueryType.GENERIC -> TODO()
+        }
     }
 
     private suspend fun handleSpecificQuery(
@@ -472,9 +500,117 @@ class FridaLLMTool : CliktCommand() {
         }
     }
 
-    private fun runInteractiveMode(
+    private suspend fun handleSemiSpecificQuery(
+        query: String,
+        collector: ContextCollector,
+        promptBuilder: PromptBuilder,
+        llmClient: LLMClient?,
+        executor: ScriptExecutor
+    ) {
+        println("\n🔍 Extracting hints from query...")
+        val hints = extractQueryHints(query)
+        println("Keywords: ${hints.joinToString(", ")}")
+
+        println("\n📊 Collecting context...")
+        val context = collector.collectFullContext()
+
+        if (context == null) {
+            println("❌ Failed to collect context")
+            return
+        }
+
+        // Mostrar estatísticas
+        collector.printStats(context)
+
+        // Salvar JSON se especificado
+        output?.let { path ->
+            val jsonStr = Json { prettyPrint = true }.encodeToString(context)
+
+            File(path).writeText(jsonStr)
+            logger.info { "Context saved to: $path" }
+        }
+
+        val relevantClasses = context.classes.filter { classInfo ->
+            hints.any { hint ->
+                classInfo.name.contains(hint, ignoreCase = true)
+            }
+        }
+
+        println("\n✅ Found ${relevantClasses.size} relevant classes:")
+        relevantClasses.take(10).forEach {
+            println("   - ${it.name}")
+        }
+
+        // Coletar métodos das classes relevantes
+        println("\n🔄 Collecting methods from relevant classes...")
+        val classesWithMethods = relevantClasses.take(5).map { classInfo ->
+            val methods = collector.collectMethodsForClass(classInfo.name)
+            println("   ${classInfo.name}: ${methods.size} methods")
+            classInfo.copy(methods = methods)
+        }
+
+        // Gerar prompt
+        val prompt = promptBuilder.buildContextualPrompt(query, classesWithMethods, context)
+
+        if (llmClient == null) {
+            println("\n📝 Prompt that would be sent:")
+            println("━".repeat(50))
+            println(prompt.take(800) + "...")
+            return
+        }
+
+        println("\n🤖 Generating Frida script with Claude...")
+        val generated = llmClient.generateScript(prompt, maxTokens = 8192)
+
+        if (generated == null) {
+            println("❌ Failed to generate script")
+            return
+        }
+
+        println("\n✅ Script generated (${generated.tokensUsed} tokens used)")
+
+        // Salvar se solicitado
+        saveScript?.let { path ->
+            File(path).writeText(generated.script)
+            println("💾 Script saved to: $path")
+        }
+
+        // Mostrar script
+        println("\n📜 Generated Script:")
+        println("━".repeat(50))
+        println(generated.script)
+        println("━".repeat(50))
+
+        // Validar
+        val validation = executor.validateScript(generated.script)
+        validation.printReport()
+
+        if (!validation.valid) {
+            println("\n⚠️  Script has validation errors - execution skipped")
+            return
+        }
+
+        // Executar se não for dry-run
+        if (!dryRun) {
+            println("\n🚀 Executing script...")
+            val result = executor.execute(generated.script, durationSeconds = 15)
+            println(executor.formatOutput(result))
+        } else {
+            println("\n ℹ️  Dry-run mode - script not executed")
+        }
+    }
+
+    private fun extractQueryHints(query: String): List<String> {
+        val words = query
+            .split(Regex("\\s+"))
+            .filter { it.length > 3 }
+            .filterNot { it in listOf("hook", "bypass", "method", "class", "return", "from", "with", "and", "the") }
+
+        return words.distinct()
+    }
+
+    private suspend fun runInteractiveMode(
         connector: FridaConnector,
-        context: AppContext,
         router: QueryRouter,
         parser: QueryParser,
         collector: ContextCollector,
@@ -494,9 +630,25 @@ class FridaLLMTool : CliktCommand() {
         if (llmClient == null) {
             println("\n⚠️  No API key - use 'setkey <key>' to enable LLM features")
         }
-        println()
 
-        var currentLLMClient = llmClient
+        val context = collector.collectFullContext()
+        if (context == null) {
+            logger.error { "Failed to collect context" }
+            return
+        }
+
+        // Mostrar estatísticas
+        collector.printStats(context)
+
+//          Salvar JSON se especificado
+        output?.let { path ->
+            val jsonStr = Json { prettyPrint = true }.encodeToString(context)
+
+            File(path).writeText(jsonStr)
+            logger.info { "Context saved to: $path" }
+        }
+
+        println()
 
         while (true) {
             print("frida-llm> ")
@@ -563,23 +715,24 @@ class FridaLLMTool : CliktCommand() {
                     }
                     continue
                 }
-
-
-                input.lowercase().startsWith("setkey ") -> {
-                    val key = input.substring(7).trim()
-                    currentLLMClient = LLMClient(key)
-                    println("✅ API key set successfully")
-                    continue
-                }
             }
 
             // Process as query
             runBlocking {
                 try {
-                    if (currentLLMClient == null) {
+                    if (llmClient == null) {
                         println("⚠️  No API key set. Use 'setkey <your-key>' first")
                     } else {
-                        processQuery(input, router, parser, connector, promptBuilder, llmClient, executor)
+                        processQuery(
+                            query = input,
+                            connector = connector,
+                            collector = collector,
+                            router = router,
+                            parser = parser,
+                            promptBuilder = promptBuilder,
+                            llmClient = llmClient,
+                            executor = executor
+                        )
                     }
                 } catch (e: Exception) {
                     println("❌ Error: ${e.message}")
