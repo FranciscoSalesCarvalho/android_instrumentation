@@ -69,7 +69,7 @@ class QueryRouter {
         // Padrões comuns que indicam especificidade parcial
         val patterns = listOf(
             // "method X" ou "método X"
-            Regex("""(?:method|método|metodo)\s+[a-z_][a-z0-9_]*"""),
+            Regex("""(?:method|método|metodo|methods)\s+[a-z_][a-z0-9_]*"""),
 
             // "class X" ou "classe X"
             Regex("""(?:class|classe)\s+[a-z_][a-z0-9_]*"""),

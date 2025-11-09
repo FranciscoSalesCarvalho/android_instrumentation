@@ -68,7 +68,7 @@ Pipeline:
 
 ESPECIFIC: hooking
 --package
-com.francisco.appprotegidofrancisco
+com.francisco.appprotegido
 --query
 "hook com.francisco.appprotegido.MainActivity.isEmulator() return false AND hook com.francisco.appprotegido.MainActivity.isRooted() return false"
 --save-script
@@ -81,3 +81,24 @@ com.pentestmobile.appwebtest
 --save-script
 "/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/pinning.js"
 --stacktrace "/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/stacktrace.txt"
+
+--package
+com.pentestmobile.appemulator
+--device
+emulator-5554
+--save-script
+/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/temp.js
+--interactive
+
+SEMI-SPECIFIC:
+--package
+com.pentestmobile.appemulator
+--query "bypass isEmulator method from MainActivity"
+--save-script
+/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/semi.js
+
+--package
+com.francisco.appprotegido
+--query "bypass isEmulator and isRooted methods from MainActivity"
+--save-script
+/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/semi_multi.js
