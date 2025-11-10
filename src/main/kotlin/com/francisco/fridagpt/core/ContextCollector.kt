@@ -7,6 +7,7 @@ import com.francisco.fridagpt.collectors.ManifestCollector
 import com.francisco.fridagpt.collectors.StorageCollector
 import com.francisco.fridagpt.models.AppContext
 import com.francisco.fridagpt.models.ClassCategory
+import com.francisco.fridagpt.models.ClassInfo
 import com.francisco.fridagpt.models.MethodInfo
 import com.francisco.fridagpt.models.ParameterInfo
 import kotlinx.coroutines.coroutineScope
@@ -127,6 +128,185 @@ class ContextCollector(
         } catch (e: Exception) {
             logger.error(e) { "Failed to parse methods for $className" }
             emptyList()
+        }
+    }
+
+    /**
+     * Coleta contexto inteligente baseado em query
+     * Suporta múltiplos hooks
+     */
+    suspend fun collectForQuery(query: String): AppContext? = coroutineScope {
+        try {
+            logger.info { "Collecting context for query: $query" }
+
+            // 1. Coleta básica primeiro
+            val basicContext = collectBasicContext() ?: return@coroutineScope null
+
+            // 2. Identifica classes relevantes
+            val keywords = extractKeywords(query)
+            val relevantClasses = filterRelevantClasses(basicContext.classes, keywords)
+
+            logger.info { "Found ${relevantClasses.size} relevant classes for query" }
+
+            // 3. Detecta se precisa buscar múltiplos métodos relacionados
+            val needsMultipleMethods = detectMultipleMethodsNeed(query)
+
+            // 4. Coleta métodos das classes relevantes SOB DEMANDA
+            val classesWithMethods = if (needsMultipleMethods) {
+                logger.info { "Collecting ALL related methods for multi-hook scenario" }
+                collectRelatedMethods(relevantClasses, keywords)
+            } else {
+                logger.info { "Collecting specific methods" }
+                relevantClasses.map { classInfo ->
+                    val methods = collectMethodsForClass(classInfo.name)
+                    classInfo.copy(methods = methods)
+                }
+            }
+
+            logger.info { "Collected ${classesWithMethods.sumOf { it.methods.size }} methods total" }
+
+            // 5. Retorna contexto enriquecido
+            AppContext(
+                appInfo = basicContext.appInfo,
+                classes = classesWithMethods,
+                frameworks = basicContext.frameworks,
+                manifest = basicContext.manifest,
+                storage = null
+            )
+
+        } catch (e: Exception) {
+            logger.error(e) { "Query-based context collection failed: ${e.message}" }
+            null
+        }
+    }
+
+    /**
+     * Coleta contexto básico (apenas essencial - mais rápido)
+     */
+    suspend fun collectBasicContext(): AppContext? = coroutineScope {
+        try {
+            logger.info { "Collecting basic context..." }
+
+            val appInfo = appInfoCollector.collect()
+            if (appInfo == null) {
+                logger.error { "Failed to collect app info" }
+                return@coroutineScope null
+            }
+
+            // Coleta apenas classes do app (não todas)
+            val classes = classCollector.collectAppClassesOnly().filter { classInfo ->
+                !classInfo.name.contains("$")
+            }
+            val frameworks = frameworkDetector.detect()
+
+            logger.info { "Basic context collected" }
+            logger.info { "  - App classes: ${classes.size}" }
+            logger.info { "  - Frameworks: ${frameworks.size}" }
+
+            AppContext(
+                appInfo = appInfo,
+                classes = classes,
+                frameworks = frameworks,
+                manifest = null,
+                storage = null
+            )
+
+        } catch (e: Exception) {
+            logger.error(e) { "Basic context collection failed: ${e.message}" }
+            null
+        }
+    }
+
+    /**
+     * Extrai keywords relevantes da query
+     */
+    private fun extractKeywords(query: String): List<String> {
+        val stopWords = setOf("hook", "bypass", "intercept", "return", "from", "the", "a", "an", "and", "or")
+
+        return query.lowercase()
+            .split(Regex("\\s+"))
+            .filter { it.length > 3 }
+            .filterNot { it in stopWords }
+            .distinct()
+    }
+
+    /**
+     * Filtra classes relevantes baseado em keywords
+     */
+    private fun filterRelevantClasses(classes: List<ClassInfo>, keywords: List<String>): List<ClassInfo> {
+        // Priorização inteligente
+        val priorityClasses = mutableListOf<ClassInfo>()
+        val relevantClasses = mutableListOf<ClassInfo>()
+
+        for (classInfo in classes) {
+            val className = classInfo.name.lowercase()
+
+            // ALTA PRIORIDADE: Application class
+            if (className.endsWith("application") && !className.startsWith("android.")) {
+                priorityClasses.add(classInfo)
+                continue
+            }
+
+            // ALTA PRIORIDADE: MainActivity
+            if (className.contains("mainactivity")) {
+                priorityClasses.add(classInfo)
+                continue
+            }
+
+            // MÉDIA PRIORIDADE: Match com keywords
+            if (keywords.any { keyword -> className.contains(keyword) }) {
+                relevantClasses.add(classInfo)
+            }
+        }
+
+        // Combina priorizando Application e MainActivity
+        return (priorityClasses + relevantClasses).distinct().take(10)
+    }
+
+    /**
+     * Detecta se query precisa de múltiplos métodos
+     */
+    private fun detectMultipleMethodsNeed(query: String): Boolean {
+        val lowerQuery = query.lowercase()
+
+        // Keywords que sugerem múltiplos hooks
+        val multiHookKeywords = listOf(
+            "all", "any", "every", "bypass", "disable", "block",
+            "emulator", "root", "ssl", "pinning", "detection",
+            "log", "intercept", "monitor"
+        )
+
+        return multiHookKeywords.any { lowerQuery.contains(it) }
+    }
+
+    /**
+     * Coleta métodos relacionados para cenários de múltiplos hooks
+     */
+    private suspend fun collectRelatedMethods(
+        classes: List<ClassInfo>,
+        keywords: List<String>
+    ): List<ClassInfo> {
+        return classes.map { classInfo ->
+            val allMethods = collectMethodsForClass(classInfo.name)
+
+            // Filtra apenas métodos relevantes baseado em keywords
+            val relevantMethods = allMethods.filter { method ->
+                keywords.any { keyword ->
+                    method.name.contains(keyword, ignoreCase = true) ||
+                            method.returnType.contains(keyword, ignoreCase = true)
+                }
+            }
+
+            // Se não encontrou métodos específicos, mantém os principais
+            val methodsToInclude = if (relevantMethods.isNotEmpty()) {
+                relevantMethods
+            } else {
+                allMethods.take(10) // Top 10 métodos
+            }
+
+            logger.debug { "${classInfo.name}: ${methodsToInclude.size} relevant methods" }
+
+            classInfo.copy(methods = methodsToInclude)
         }
     }
 

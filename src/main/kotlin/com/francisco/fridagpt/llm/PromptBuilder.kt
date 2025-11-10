@@ -181,11 +181,35 @@ class PromptBuilder {
     /**
      * Prompt para query genérica (descoberta completa)
      */
-    fun buildGenericPrompt(query: String, context: AppContext): String {
+    fun buildGenericPrompt(
+        query: String,
+        context: AppContext,
+        needsMultipleHooks: Boolean = false
+    ): String {
         val appClasses = context.classes
-            .filter { it.category == ClassCategory.APP }
-            .take(20)
-            .joinToString("\n") { "- ${it.name}" }
+            .filter {
+                it.category == ClassCategory.APP &&
+                        !it.name.contains("$") &&
+                        !it.name.endsWith("kt", ignoreCase = true)
+            }
+
+        val classesInfo = appClasses.joinToString("\n") { classInfo ->
+            val methodsInfo = if (classInfo.methods.isNotEmpty()) {
+                classInfo.methods
+                    .filter { !it.name.contains("$") }
+                    .take(10)
+                    .joinToString("\n      ") {
+                    "- ${it.signature}"
+                }
+            } else {
+                "  (methods not collected)"
+            }
+            """
+              Class: ${classInfo.name}
+                Methods:
+                  $methodsInfo
+            """.trimIndent()
+        }
 
         return """
             You are an expert in Frida dynamic instrumentation for Android.
@@ -201,13 +225,21 @@ class PromptBuilder {
             DETECTED FRAMEWORKS:
             ${context.frameworks.joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
             
-            APP CLASSES (sample):
-            $appClasses
-            ... (${context.classes.size} total classes)
+            RELEVANT CLASSES FOUND:
+            $classesInfo
             
             TASK:
             Based on the user request and app information, generate a Frida script to accomplish the goal.
             You may need to make educated guesses about which classes/methods to hook based on common Android patterns.
+            
+            ${
+                if (needsMultipleHooks) """
+                IMPORTANT - MULTIPLE HOOKS REQUIRED:
+                The user's request suggests hooking multiple related methods. Consider:
+                1.Hook just the methods asked by the user.
+                    """
+                else ""
+            }
             
             For example:
             - Emulator detection: often in Application class, SecurityCheck, DeviceValidator classes

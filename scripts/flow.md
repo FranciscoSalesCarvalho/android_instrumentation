@@ -102,3 +102,18 @@ com.francisco.appprotegido
 --query "bypass isEmulator and isRooted methods from MainActivity"
 --save-script
 /Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/semi_multi.js
+
+GENERIC:
+--package
+com.pentestmobile.appemulator
+--query "bypass emulator detection"
+--save-script
+/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/generic.js
+
+--package
+com.francisco.appprotegido
+--device
+emulator-5554
+--query "bypass emulator and root detection"
+--save-script
+/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/generic_double.js
