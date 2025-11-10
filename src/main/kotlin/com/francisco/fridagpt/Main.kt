@@ -211,7 +211,16 @@ class FridaLLMTool : CliktCommand() {
                 )
             }
 
-            QueryRouter.QueryType.GENERIC -> TODO()
+            QueryRouter.QueryType.GENERIC -> {
+                println("\n🔎 Generic query - Full context collection")
+                handleGenericQuery(
+                    query = query,
+                    collector = collector,
+                    promptBuilder = promptBuilder,
+                    llmClient = llmClient,
+                    executor = executor
+                )
+            }
         }
     }
 
@@ -699,6 +708,96 @@ class FridaLLMTool : CliktCommand() {
         val overloadCount = script.split(".overload").size - 1
 
         return maxOf(implementationCount, overloadCount, 1)
+    }
+
+    private suspend fun handleGenericQuery(
+        query: String,
+        collector: ContextCollector,
+        promptBuilder: PromptBuilder,
+        llmClient: LLMClient?,
+        executor: ScriptExecutor
+    ) {
+        println("\n📊 Collecting full context for generic query...")
+
+        val context = collector.collectForQuery(query)
+
+        if (context == null) {
+            println("❌ Failed to collect context")
+            return
+        }
+
+        collector.printStats(context)
+
+        // Detecta se precisa de múltiplos hooks
+        val separators = listOf(
+            " AND " to Regex("""\s+AND\s+""", RegexOption.IGNORE_CASE),
+            " OR " to Regex("""\s+OR\s+""", RegexOption.IGNORE_CASE),
+            "," to Regex(""",\s*"""),
+            ";" to Regex(""";\s*"""),
+            "\n" to Regex("""\n+""")
+        )
+
+        var needsMultiHooks = false
+        for ((_, regex) in separators) {
+            if (regex.containsMatchIn(query)) {
+                needsMultiHooks = true
+                break
+            }
+        }
+
+        // Gerar prompt
+        val prompt = promptBuilder.buildGenericPrompt(
+            query = query,
+            context = context,
+            needsMultipleHooks = needsMultiHooks,
+        )
+
+        if (llmClient == null) {
+            println("\n📝 Prompt that would be sent:")
+            println("━".repeat(50))
+            println(prompt.take(1000) + "...")
+            return
+        }
+
+        println("\n🤖 Generating Frida script with Claude...")
+        val generated = llmClient.generateScript(prompt, maxTokens = 8192)
+
+        if (generated == null) {
+            println("❌ Failed to generate script")
+            return
+        }
+
+        println("\n✅ Script generated (${generated.tokensUsed} tokens used)")
+
+        // Salvar se solicitado
+        saveScript?.let { path ->
+            File(path).writeText(generated.script)
+            println("💾 Script saved to: $path")
+        }
+
+        // Mostrar script
+        println("\n📜 Generated Script:")
+        println("━".repeat(50))
+        println(generated.script)
+        println("━".repeat(50))
+
+        // Validar
+        val validation = executor.validateScript(generated.script)
+        validation.printReport()
+
+        if (!validation.valid) {
+            println("\n⚠️  Script has validation errors - execution skipped")
+            return
+        }
+
+        // Executar se não for dry-run
+        if (!dryRun) {
+            println("\n🚀 Executing script...")
+            val result = executor.execute(generated.script, durationSeconds = 20)
+            println(executor.formatOutput(result))
+        } else {
+            println("\n ℹ️  Dry-run mode - script not executed")
+        }
     }
 
     private suspend fun runInteractiveMode(
