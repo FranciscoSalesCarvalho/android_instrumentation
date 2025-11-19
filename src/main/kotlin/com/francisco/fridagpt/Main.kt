@@ -1,3 +1,5 @@
+@file:JvmName("Main")
+
 package com.francisco.fridagpt
 
 import com.francisco.fridagpt.collectors.LogAnalyzer
@@ -6,8 +8,6 @@ import com.francisco.fridagpt.core.*
 import com.francisco.fridagpt.core.SSLBypassOrchestrator.PhaseResult
 import com.francisco.fridagpt.llm.LLMClient
 import com.francisco.fridagpt.llm.PromptBuilder
-import com.francisco.fridagpt.models.AppContext
-import com.francisco.fridagpt.models.ClassInfo
 import com.francisco.fridagpt.models.MethodInfo
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
@@ -15,7 +15,6 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
-import com.sun.tools.javac.util.List.collector
 import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
