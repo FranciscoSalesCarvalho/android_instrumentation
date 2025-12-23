@@ -52,7 +52,8 @@ class QueryRouter {
             Regex("""[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){2,}\.[a-z_][a-z0-9_]*\s*\("""),
 
             // com.example.Class.method (sem parênteses)
-            Regex("""[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){2,}\.[a-z_][a-z0-9_]*(?:\s|${'$'})""")
+            Regex("""[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){2,}\.[a-z_][a-z0-9_]*(?:\s|${'$'})"""),
+            Regex("""(.+)\.([^.\s(]+)\.([^(]+)\(([^)]*)\)\s*(.*)"""),
         )
 
         return patterns.any { it.containsMatchIn(query) }

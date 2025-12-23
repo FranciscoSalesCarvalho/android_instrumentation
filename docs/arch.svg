@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="1200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <!-- Gradients -->
+        <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+        </linearGradient>
+
+        <linearGradient id="secondaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#48bb78;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#38a169;stop-opacity:1" />
+        </linearGradient>
+
+        <linearGradient id="androidGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#3ddc84;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#2da768;stop-opacity:1" />
+        </linearGradient>
+
+        <!-- Shadow filter -->
+        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+            <feOffset dx="2" dy="2" result="offsetblur"/>
+            <feComponentTransfer>
+                <feFuncA type="linear" slope="0.3"/>
+            </feComponentTransfer>
+            <feMerge>
+                <feMergeNode/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+
+        <!-- Arrow marker -->
+        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <polygon points="0 0, 10 3, 0 6" fill="#667eea" />
+        </marker>
+
+        <marker id="arrowheadGreen" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <polygon points="0 0, 10 3, 0 6" fill="#48bb78" />
+        </marker>
+    </defs>
+
+    <!-- Background -->
+    <rect width="1600" height="1200" fill="#f7fafc"/>
+
+    <!-- Title -->
+    <text x="800" y="50" font-family="Arial, sans-serif" font-size="36" font-weight="bold" text-anchor="middle" fill="#2d3748">
+        Arquitetura: Frida + LLM para Security Testing
+    </text>
+
+    <text x="800" y="85" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" fill="#718096">
+        Research Tool para Geração Automática de Scripts de Instrumentação Dinâmica
+    </text>
+
+    <!-- Main Architecture Section -->
+
+    <!-- Security Researcher (Left) -->
+    <g id="researcher" filter="url(#shadow)">
+        <rect x="50" y="150" width="380" height="320" rx="15" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+        <rect x="50" y="150" width="380" height="60" rx="15" fill="url(#secondaryGradient)"/>
+        <text x="240" y="190" font-family="Arial, sans-serif" font-size="22" font-weight="bold" text-anchor="middle" fill="white">
+            👨‍💻 Security Researcher
+        </text>
+
+        <!-- Icon -->
+        <circle cx="150" cy="270" r="40" fill="#667eea" opacity="0.2"/>
+        <circle cx="150" cy="260" r="25" fill="#667eea"/>
+        <path d="M 135 285 Q 150 295 165 285 L 165 320 Q 150 330 135 320 Z" fill="#764ba2"/>
+
+        <!-- Laptop -->
+        <rect x="130" y="335" width="40" height="2" fill="#2d3748"/>
+        <path d="M 125 335 L 175 335 L 180 342 L 120 342 Z" fill="#4a5568"/>
+
+        <!-- Text content -->
+        <text x="220" y="250" font-family="Arial, sans-serif" font-size="16" fill="#2d3748">
+            <tspan x="220" dy="0">Interage via:</tspan>
+            <tspan x="220" dy="25">• Linguagem Natural</tspan>
+            <tspan x="220" dy="25">• Frida CLI</tspan>
+            <tspan x="220" dy="25">• Kotlin Tool</tspan>
+        </text>
+
+        <rect x="70" y="390" width="120" height="30" rx="5" fill="#48bb78" opacity="0.2"/>
+        <text x="130" y="410" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#48bb78">
+            Queries
+        </text>
+
+        <rect x="210" y="390" width="120" height="30" rx="5" fill="#ed8936" opacity="0.2"/>
+        <text x="270" y="410" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#ed8936">
+            Results
+        </text>
+
+        <rect x="340" y="390" width="70" height="30" rx="5" fill="#667eea" opacity="0.2"/>
+        <text x="375" y="410" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#667eea">
+            Monitor
+        </text>
+    </g>
+
+    <!-- Research Tool - Kotlin + Claude (Center) -->
+    <g id="research-tool" filter="url(#shadow)">
+        <rect x="520" y="150" width="560" height="320" rx="15" fill="white" stroke="#667eea" stroke-width="3"/>
+        <rect x="520" y="150" width="560" height="60" rx="15" fill="url(#primaryGradient)"/>
+        <text x="800" y="190" font-family="Arial, sans-serif" font-size="22" font-weight="bold" text-anchor="middle" fill="white">
+            🧠 Research Tool (Kotlin + Claude)
+        </text>
+
+        <!-- Brain/AI Icon -->
+        <circle cx="620" cy="270" r="45" fill="rgba(102, 126, 234, 0.2)"/>
+        <path d="M 595 250 Q 620 230 645 250 Q 655 265 645 280 Q 620 300 595 280 Q 585 265 595 250" fill="rgba(102, 126, 234, 0.3)"/>
+        <circle cx="610" cy="260" r="5" fill="#667eea"/>
+        <circle cx="630" cy="260" r="5" fill="#667eea"/>
+        <path d="M 605 275 Q 620 285 635 275" stroke="#667eea" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+        <!-- Neural connections -->
+        <line x1="590" y1="270" x2="570" y2="260" stroke="#667eea" stroke-width="2" opacity="0.4"/>
+        <line x1="590" y1="270" x2="570" y2="280" stroke="#667eea" stroke-width="2" opacity="0.4"/>
+        <line x1="650" y1="270" x2="670" y2="260" stroke="#667eea" stroke-width="2" opacity="0.4"/>
+        <line x1="650" y1="270" x2="670" y2="280" stroke="#667eea" stroke-width="2" opacity="0.4"/>
+        <circle cx="570" cy="260" r="4" fill="#ffd700"/>
+        <circle cx="570" cy="280" r="4" fill="#ffd700"/>
+        <circle cx="670" cy="260" r="4" fill="#ffd700"/>
+        <circle cx="670" cy="280" r="4" fill="#ffd700"/>
+
+        <!-- Components -->
+        <rect x="700" y="230" width="350" height="220" rx="8" fill="#f7fafc" stroke="#e2e8f0" stroke-width="1"/>
+
+        <text x="875" y="255" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#2d3748">
+            Componentes Principais
+        </text>
+
+        <g id="components-list">
+            <circle cx="720" cy="280" r="4" fill="#48bb78"/>
+            <text x="735" y="285" font-family="Arial, sans-serif" font-size="14" fill="#2d3748">
+                Roteamento Inteligente (Específico/Semi/Genérico)
+            </text>
+
+            <circle cx="720" cy="305" r="4" fill="#48bb78"/>
+            <text x="735" y="310" font-family="Arial, sans-serif" font-size="14" fill="#2d3748">
+                Coleta de Contexto Sob Demanda
+            </text>
+
+            <circle cx="720" cy="330" r="4" fill="#48bb78"/>
+            <text x="735" y="335" font-family="Arial, sans-serif" font-size="14" fill="#2d3748">
+                Claude API Integration
+            </text>
+
+            <circle cx="720" cy="355" r="4" fill="#48bb78"/>
+            <text x="735" y="360" font-family="Arial, sans-serif" font-size="14" fill="#2d3748">
+                Frida Script Generator
+            </text>
+
+            <circle cx="720" cy="380" r="4" fill="#48bb78"/>
+            <text x="735" y="385" font-family="Arial, sans-serif" font-size="14" fill="#2d3748">
+                Runtime Executor &amp; Monitor
+            </text>
+
+            <circle cx="720" cy="405" r="4" fill="#48bb78"/>
+            <text x="735" y="410" font-family="Arial, sans-serif" font-size="14" fill="#2d3748">
+                Log Security Analyzer
+            </text>
+
+            <circle cx="720" cy="430" r="4" fill="#48bb78"/>
+            <text x="735" y="435" font-family="Arial, sans-serif" font-size="14" fill="#2d3748">
+                Multi-hook &amp; REPL Support
+            </text>
+        </g>
+    </g>
+
+    <!-- Android App Target (Right) -->
+    <g id="android-target" filter="url(#shadow)">
+        <rect x="1170" y="150" width="380" height="320" rx="15" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+        <rect x="1170" y="150" width="380" height="60" rx="15" fill="url(#androidGradient)"/>
+        <text x="1360" y="190" font-family="Arial, sans-serif" font-size="22" font-weight="bold" text-anchor="middle" fill="white">
+            📱 Android App (Target)
+        </text>
+
+        <!-- Android Phone Icon -->
+        <rect x="1240" y="230" width="80" height="140" rx="10" fill="#3ddc84" opacity="0.2"/>
+        <rect x="1245" y="240" width="70" height="110" fill="white" stroke="#3ddc84" stroke-width="2"/>
+        <circle cx="1280" cy="365" r="8" fill="#3ddc84"/>
+
+        <!-- Android Robot -->
+        <circle cx="1280" cy="280" r="20" fill="#3ddc84"/>
+        <rect x="1265" y="280" width="30" height="30" fill="#3ddc84"/>
+        <rect x="1265" y="310" width="10" height="20" fill="#3ddc84"/>
+        <rect x="1285" y="310" width="10" height="20" fill="#3ddc84"/>
+        <line x1="1265" y1="265" x2="1260" y2="255" stroke="#3ddc84" stroke-width="3" stroke-linecap="round"/>
+        <line x1="1295" y1="265" x2="1300" y2="255" stroke="#3ddc84" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="1272" cy="280" r="3" fill="white"/>
+        <circle cx="1288" cy="280" r="3" fill="white"/>
+
+        <!-- Lock symbol -->
+        <rect x="1325" y="290" width="30" height="35" fill="#e53e3e" opacity="0.8" rx="3"/>
+        <path d="M 1332 290 L 1332 282 Q 1332 275 1340 275 Q 1348 275 1348 282 L 1348 290" stroke="#e53e3e" stroke-width="3" fill="none"/>
+        <circle cx="1340" cy="307" r="4" fill="white"/>
+
+        <!-- Text content -->
+        <text x="1380" y="250" font-family="Arial, sans-serif" font-size="16" fill="#2d3748">
+            <tspan x="1380" dy="0">Processo Alvo:</tspan>
+            <tspan x="1380" dy="25">• ART/Dalvik Runtime</tspan>
+            <tspan x="1380" dy="25">• Native Libraries (.so)</tspan>
+            <tspan x="1380" dy="25">• Java/Kotlin Classes</tspan>
+            <tspan x="1380" dy="25">• Frida Agent Injected</tspan>
+        </text>
+
+        <rect x="1190" y="390" width="160" height="30" rx="5" fill="#e53e3e" opacity="0.2"/>
+        <text x="1270" y="410" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#e53e3e">
+            Instrumented
+        </text>
+
+        <rect x="1370" y="390" width="160" height="30" rx="5" fill="#3ddc84" opacity="0.2"/>
+        <text x="1450" y="410" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#3ddc84">
+            Monitored
+        </text>
+    </g>
+
+    <!-- Arrows between components -->
+    <!-- Researcher to Tool -->
+    <path d="M 430 250 L 520 250" stroke="#667eea" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+    <text x="475" y="240" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#667eea">
+        Query
+    </text>
+
+    <!-- Tool to Researcher -->
+    <path d="M 520 350 L 430 350" stroke="#48bb78" stroke-width="3" fill="none" marker-end="url(#arrowheadGreen)"/>
+    <text x="475" y="370" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#48bb78">
+        Results
+    </text>
+
+    <!-- Tool to Android -->
+    <path d="M 1080 250 L 1170 250" stroke="#667eea" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+    <text x="1125" y="240" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#667eea">
+        Inject &amp; Hook
+    </text>
+
+    <!-- Android to Tool -->
+    <path d="M 1170 350 L 1080 350" stroke="#48bb78" stroke-width="3" fill="none" marker-end="url(#arrowheadGreen)"/>
+    <text x="1125" y="370" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#48bb78">
+        Runtime Data
+    </text>
+
+    <!-- Query Types Section -->
+    <g id="query-types">
+        <rect x="50" y="520" width="1500" height="200" rx="15" fill="white" stroke="#e2e8f0" stroke-width="2" filter="url(#shadow)"/>
+        <rect x="50" y="520" width="1500" height="50" rx="15" fill="#f7fafc"/>
+        <text x="800" y="555" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#2d3748">
+            🎯 Tipos de Query (Roteamento Inteligente)
+        </text>
+
+        <!-- Specific -->
+        <rect x="80" y="590" width="420" height="100" rx="10" fill="#f0fff4" stroke="#48bb78" stroke-width="3"/>
+        <text x="290" y="615" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#48bb78">
+            ✅ Específica
+        </text>
+        <text x="290" y="640" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#2d3748">
+            Classe e método conhecidos
+        </text>
+        <rect x="100" y="650" width="380" height="25" rx="5" fill="white"/>
+        <text x="290" y="668" font-family="Arial, sans-serif" font-size="13" font-style="italic" text-anchor="middle" fill="#4a5568">
+            "Hook MainActivity.onCreate"
+        </text>
+
+        <!-- Semi-specific -->
+        <rect x="590" y="590" width="420" height="100" rx="10" fill="#fffaf0" stroke="#ed8936" stroke-width="3"/>
+        <text x="800" y="615" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#ed8936">
+            🔍 Semi-específica
+        </text>
+        <text x="800" y="640" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#2d3748">
+            Classe conhecida, método desconhecido
+        </text>
+        <rect x="610" y="650" width="380" height="25" rx="5" fill="white"/>
+        <text x="800" y="668" font-family="Arial, sans-serif" font-size="13" font-style="italic" text-anchor="middle" fill="#4a5568">
+            "Hook métodos de login da AuthManager"
+        </text>
+
+        <!-- Generic -->
+        <rect x="1100" y="590" width="420" height="100" rx="10" fill="#f0f9ff" stroke="#667eea" stroke-width="3"/>
+        <text x="1310" y="615" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#667eea">
+            🌐 Genérica
+        </text>
+        <text x="1310" y="640" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#2d3748">
+            Conceito ou comportamento
+        </text>
+        <rect x="1120" y="650" width="380" height="25" rx="5" fill="white"/>
+        <text x="1310" y="668" font-family="Arial, sans-serif" font-size="13" font-style="italic" text-anchor="middle" fill="#4a5568">
+            "Monitore todas as requisições HTTP"
+        </text>
+    </g>
+
+    <!-- Research Value Section -->
+    <g id="research-value">
+        <rect x="50" y="770" width="1500" height="380" rx="15" fill="white" stroke="#e2e8f0" stroke-width="2" filter="url(#shadow)"/>
+        <rect x="50" y="770" width="1500" height="50" rx="15" fill="url(#primaryGradient)"/>
+        <text x="800" y="805" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="white">
+            🎯 Valor da Pesquisa &amp; Impacto na Comunidade de Segurança
+        </text>
+
+        <!-- Value boxes -->
+        <!-- Democratization -->
+        <rect x="80" y="850" width="330" height="140" rx="10" fill="#f0fff4" stroke="#48bb78" stroke-width="2"/>
+        <text x="245" y="880" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#2d3748">
+            🚀 Democratização
+        </text>
+        <text x="95" y="905" font-family="Arial, sans-serif" font-size="13" fill="#4a5568">
+            <tspan x="95" dy="0">LLMs gerando scripts Frida</tspan>
+            <tspan x="95" dy="18">funcionais tornam análise de</tspan>
+            <tspan x="95" dy="18">segurança acessível, reduzindo</tspan>
+            <tspan x="95" dy="18">barreira de entrada na área.</tspan>
+        </text>
+
+        <!-- Acceleration -->
+        <rect x="440" y="850" width="330" height="140" rx="10" fill="#fffaf0" stroke="#ed8936" stroke-width="2"/>
+        <text x="605" y="880" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#2d3748">
+            ⚡ Aceleração
+        </text>
+        <text x="455" y="905" font-family="Arial, sans-serif" font-size="13" fill="#4a5568">
+            <tspan x="455" dy="0">Reduz drasticamente tempo de</tspan>
+            <tspan x="455" dy="18">desenvolvimento. O que levaria</tspan>
+            <tspan x="455" dy="18">horas pode ser feito em minutos,</tspan>
+            <tspan x="455" dy="18">focando na análise, não código.</tspan>
+        </text>
+
+        <!-- Education -->
+        <rect x="800" y="850" width="330" height="140" rx="10" fill="#f0f9ff" stroke="#667eea" stroke-width="2"/>
+        <text x="965" y="880" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#2d3748">
+            🎓 Educação
+        </text>
+        <text x="815" y="905" font-family="Arial, sans-serif" font-size="13" fill="#4a5568">
+            <tspan x="815" dy="0">Scripts gerados servem como</tspan>
+            <tspan x="815" dy="18">exemplos de aprendizado para</tspan>
+            <tspan x="815" dy="18">iniciantes. Acelera curva em</tspan>
+            <tspan x="815" dy="18">reverse engineering.</tspan>
+        </text>
+
+        <!-- Scientific Advancement -->
+        <rect x="1160" y="850" width="330" height="140" rx="10" fill="#faf5ff" stroke="#9f7aea" stroke-width="2"/>
+        <text x="1325" y="880" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#2d3748">
+            🔬 Avanço Científico
+        </text>
+        <text x="1175" y="905" font-family="Arial, sans-serif" font-size="13" fill="#4a5568">
+            <tspan x="1175" dy="0">Primeira pesquisa a medir</tspan>
+            <tspan x="1175" dy="18">cientificamente capacidade de</tspan>
+            <tspan x="1175" dy="18">LLMs em gerar código de</tspan>
+            <tspan x="1175" dy="18">instrumentação funcional.</tspan>
+        </text>
+
+        <!-- Community Contributions -->
+        <rect x="80" y="1020" width="1410" height="110" rx="10" fill="#f7fafc" stroke="#667eea" stroke-width="2"/>
+        <text x="785" y="1050" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#2d3748">
+            🌟 Contribuições para a Comunidade de Segurança
+        </text>
+
+        <circle cx="180" cy="1080" r="20" fill="#667eea" opacity="0.2"/>
+        <text x="180" y="1088" font-family="Arial, sans-serif" font-size="24" text-anchor="middle">📊</text>
+        <text x="220" y="1075" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#2d3748">Tooling Inteligente</text>
+        <text x="220" y="1095" font-family="Arial, sans-serif" font-size="12" fill="#4a5568">Supera limitações de ferramentas</text>
+        <text x="220" y="1110" font-family="Arial, sans-serif" font-size="12" fill="#4a5568">pré-escritas (Objection)</text>
+
+        <circle cx="630" cy="1080" r="20" fill="#48bb78" opacity="0.2"/>
+        <text x="630" y="1088" font-family="Arial, sans-serif" font-size="24" text-anchor="middle">🛡️</text>
+        <text x="670" y="1075" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#2d3748">Detecção de Vulnerabilidades</text>
+        <text x="670" y="1095" font-family="Arial, sans-serif" font-size="12" fill="#4a5568">Facilita identificação rápida de</text>
+        <text x="670" y="1110" font-family="Arial, sans-serif" font-size="12" fill="#4a5568">falhas, protegendo usuários</text>
+
+        <circle cx="1150" cy="1080" r="20" fill="#9f7aea" opacity="0.2"/>
+        <text x="1150" y="1088" font-family="Arial, sans-serif" font-size="24" text-anchor="middle">🔓</text>
+        <text x="1190" y="1075" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#2d3748">Open Source Future</text>
+        <text x="1190" y="1095" font-family="Arial, sans-serif" font-size="12" fill="#4a5568">Pesquisa pavimenta caminho para</text>
+        <text x="1190" y="1110" font-family="Arial, sans-serif" font-size="12" fill="#4a5568">ferramentas que beneficiam todos</text>
+    </g>
+</svg>

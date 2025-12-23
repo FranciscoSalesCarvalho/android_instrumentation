@@ -16,7 +16,8 @@ data class ParsedQuery(
     val parameters: List<String>, // Ex: ["String", "int"]
     val returnType: String?,      // Ex: "boolean", "void"
     val action: ActionType,
-    val returnValue: String?
+    val returnValue: String?,
+    val originalQuery: String,
 )
 
 /**
@@ -67,8 +68,6 @@ class QueryParser {
         val separators = listOf(
             " AND " to Regex("""\s+AND\s+""", RegexOption.IGNORE_CASE),
             " OR " to Regex("""\s+OR\s+""", RegexOption.IGNORE_CASE),
-            "," to Regex(""",\s*"""),
-            ";" to Regex(""";\s*"""),
             "\n" to Regex("""\n+""")
         )
 
@@ -126,21 +125,9 @@ class QueryParser {
      * Parseia um único hook
      */
     private fun parseSingle(query: String): ParsedQuery? {
-        val normalized = query.lowercase().trim()
-
-        // Tenta diferentes padrões de query
-        val parsers = listOf(
-            ::parseHookPattern,
-            ::parseBypassPattern,
-            ::parseInterceptPattern,
-            ::parseReturnPattern
-        )
-
-        for (parser in parsers) {
-            val result = parser(normalized, query)
-            if (result != null) {
-                return result
-            }
+        val result = parseHookPattern(query)
+        if (result != null) {
+            return result
         }
 
         return null
@@ -152,73 +139,25 @@ class QueryParser {
      *   - hook com.example.SecurityCheck.isEmulator() return false
      *   - hook com.pentestmobile.MainActivity.checkDevice()Z
      */
-    private fun parseHookPattern(normalized: String, original: String): ParsedQuery? {
-        val patterns = listOf(
-            // Com return value explícito
-            Regex("""hook\s+([a-z][a-z0-9_.]*)\.([A-Z][a-zA-Z0-9]*)\.([a-z][a-zA-Z0-9_]*)\s*\(\s*\)\s*(.*)"""),
+    private fun parseHookPattern(original: String): ParsedQuery? {
+        val pattern = Regex("""(hook|bypass|intercept|return|overload implementation of|replace implementation of)\s+(?<package>.*)\.(?<class>[^.\s(]+)\.(?<method>[^(]+)\((?<params>.*)\)(?<description>.*)""")
 
-            // Com assinatura JNI
-            Regex("""hook\s+([a-z][a-z0-9_.]+)\.([a-z_][a-z0-9_]*)\(([^)]*)\)([A-Z])""")
+        val match = pattern.find(original) ?: return null
+
+        val pack = match.groupValues[2]
+        val clazz = match.groupValues[3]
+        val method = match.groupValues[4]
+        val params = match.groupValues[5]
+        val actionPart = match.groupValues[6]
+
+        return buildParsedQuery(
+            pack = pack,
+            clazz = clazz,
+            method = method,
+            params = params,
+            actionPart = actionPart,
+            originalQuery = original
         )
-
-        for (pattern in patterns) {
-            val match = pattern.find(original) ?: continue
-
-            val pack = match.groupValues[1]
-            val clazz = match.groupValues[2]
-            val method = match.groupValues.getOrNull(3) ?: ""
-            val actionPart = match.groupValues.getOrNull(4) ?: ""
-
-            return buildParsedQuery(pack, clazz, method, actionPart, original)
-        }
-
-        return null
-    }
-
-    /**
-     * Padrão: bypass com.example.Class.method
-     */
-    private fun parseBypassPattern(normalized: String, original: String): ParsedQuery? {
-        val pattern = Regex("""bypass\s+([a-z][a-z0-9_.]+)\.([a-z_][a-z0-9_]*)\s*(?:\(([^)]*)\))?\s*(.*)""")
-        val match = pattern.find(normalized) ?: return null
-
-        val fullClassName = match.groupValues[1]
-        val methodName = match.groupValues[2]
-        val params = match.groupValues.getOrNull(3) ?: ""
-        val actionPart = match.groupValues.getOrNull(4) ?: "return false"
-
-        return buildParsedQuery(fullClassName, methodName, params, actionPart, original)
-    }
-
-    /**
-     * Padrão: intercept/interceptar com.example.Class.method
-     */
-    private fun parseInterceptPattern(normalized: String, original: String): ParsedQuery? {
-        val pattern = Regex("""intercept(?:ar)?\s+([a-z][a-z0-9_.]+)\.([a-z_][a-z0-9_]*)\s*(?:\(([^)]*)\))?\s*(.*)""")
-        val match = pattern.find(normalized) ?: return null
-
-        val fullClassName = match.groupValues[1]
-        val methodName = match.groupValues[2]
-        val params = match.groupValues.getOrNull(3) ?: ""
-        val actionPart = match.groupValues.getOrNull(4) ?: "log"
-
-        return buildParsedQuery(fullClassName, methodName, params, actionPart, original)
-    }
-
-    /**
-     * Padrão: return false/true from com.example.Class.method
-     */
-    private fun parseReturnPattern(normalized: String, original: String): ParsedQuery? {
-        val pattern = Regex("""return\s+(false|true|null|\d+|"[^"]*")\s+from\s+([a-z][a-z0-9_.]+)\.([a-z_][a-z0-9_]*)""")
-        val match = pattern.find(normalized) ?: return null
-
-        val returnValue = match.groupValues[1]
-        val fullClassName = match.groupValues[2]
-        val methodName = match.groupValues[3]
-
-        val actionPart = "return $returnValue"
-
-        return buildParsedQuery(fullClassName, methodName, "", actionPart, original)
     }
 
     /**
@@ -228,6 +167,7 @@ class QueryParser {
         pack: String,
         clazz: String,
         method: String,
+        params: String,
         actionPart: String,
         originalQuery: String
     ): ParsedQuery {
@@ -235,12 +175,12 @@ class QueryParser {
         val packageName = pack
         val simpleClassName = clazz
 
-//        // Parsear parâmetros
-//        val parameterList = if (params.isNotBlank()) {
-//            params.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-//        } else {
-//            emptyList()
-//        }
+        // Parsear parâmetros
+        val parameterList = if (params.isNotBlank()) {
+            params.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        } else {
+            emptyList()
+        }
 
         // Determinar ação e return value
         val (action, returnValue) = inferAction(actionPart, originalQuery)
@@ -253,11 +193,12 @@ class QueryParser {
             className = "$packageName.$clazz",
             simpleClassName = simpleClassName,
             methodName = method,
-            methodSignature = null, // Será construído depois se necessário
-            parameters = emptyList(),
+            parameters = parameterList,
+            methodSignature = null,
             returnType = returnType,
             action = action,
-            returnValue = returnValue
+            returnValue = returnValue,
+            originalQuery = originalQuery
         )
     }
 
@@ -269,10 +210,10 @@ class QueryParser {
 
         return when {
             lower.contains("return false") || lower.contains("retornar false") ->
-                ActionType.RETURN_FALSE to "false"
+                ActionType.RETURN_FALSE to originalQuery
 
             lower.contains("return true") || lower.contains("retornar true") ->
-                ActionType.RETURN_TRUE to "true"
+                ActionType.RETURN_TRUE to originalQuery
 
             lower.contains("return null") || lower.contains("retornar null") ->
                 ActionType.RETURN_NULL to "null"
@@ -286,12 +227,12 @@ class QueryParser {
 
             lower.contains("log") || lower.contains("print") ||
                     lower.contains("intercept") || lower.contains("interceptar") ->
-                ActionType.LOG_CALLS to null
+                ActionType.LOG_CALLS to originalQuery
 
             lower.contains("modif") || lower.contains("change") ->
                 ActionType.MODIFY_PARAMS to null
 
-            else -> ActionType.HOOK_GENERIC to null
+            else -> ActionType.HOOK_GENERIC to originalQuery
         }
     }
 

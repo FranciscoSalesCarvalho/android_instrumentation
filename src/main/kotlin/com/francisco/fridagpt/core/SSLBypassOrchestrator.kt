@@ -423,7 +423,7 @@ Make it comprehensive and production-ready.
     }
 
     private fun saveScript(script: String, path: String) {
-        java.io.File(path).writeText(script)
+        java.io.File("$path/test.js").writeText(script)
     }
 
     private fun askContinue(message: String = "Continue anyway?"): Boolean {

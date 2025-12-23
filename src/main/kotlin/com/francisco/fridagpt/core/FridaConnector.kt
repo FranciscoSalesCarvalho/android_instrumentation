@@ -17,7 +17,8 @@ private val logger = KotlinLogging.logger {}
 
 class FridaConnector(
     val packageName: String,
-    private val deviceId: String? = null // null = USB mode
+    private val deviceId: String? = null, // null = USB mode
+    private val port: Int,
 ) {
     private var isConnected = false
     private var process: Process? = null
@@ -225,9 +226,19 @@ class FridaConnector(
 
     private suspend fun spawnApp() = withContext(Dispatchers.IO) {
         try {
-            val command = listOf("frida", "-U", "-f", packageName)
+            val command = buildList {
+                add("frida")
+                if (port == FRIDA_SERVER_PORT) {
+                    add("-U")
+                } else {
+                    add("-H")
+                    add("127.0.0.1:$port")
+                }
+                add("-f")
+                add(packageName)
+            }
 
-            val proc = ProcessBuilder(command).start()
+            ProcessBuilder(command).start()
             delay(2000)
             logger.info { "App spawned successfully" }
         } catch (e: Exception) {
@@ -240,11 +251,14 @@ class FridaConnector(
         return buildList {
             add("frida")
             // Device selection
-            if (deviceId != null) {
+            if (port == FRIDA_SERVER_PORT && deviceId == null) {
+                add("-U") // USB mode
+            } else if (port != FRIDA_SERVER_PORT) {
+                add("-H")
+                add("127.0.0.1:$port")
+            } else if (deviceId != null) {
                 add("-D")
                 add(deviceId)
-            } else {
-                add("-U") // USB mode
             }
             add("-l")
             add(scriptPath)
@@ -258,7 +272,15 @@ class FridaConnector(
     private fun buildFridaCommand2(scriptPath: String): List<String> {
         return buildList {
             add("frida")
-            add("-U")
+            if (port == FRIDA_SERVER_PORT && deviceId == null) {
+                add("-U") // USB mode
+            } else if (port != FRIDA_SERVER_PORT) {
+                add("-H")
+                add("127.0.0.1:$port")
+            } else if (deviceId != null) {
+                add("-D")
+                add(deviceId)
+            }
             add("-f")
             add(packageName)
             add("-l")

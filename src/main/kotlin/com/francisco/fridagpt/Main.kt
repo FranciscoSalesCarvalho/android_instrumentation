@@ -87,6 +87,11 @@ class FridaLLMTool : CliktCommand() {
         help = "Duration in seconds to collect logs (default: 30)"
     ).int().default(30)
 
+    private val port by option(
+        "--port",
+        help = "Port frida running"
+    ).int().default(27042)
+
     override fun run() = runBlocking {
         printBanner()
 
@@ -96,6 +101,7 @@ class FridaLLMTool : CliktCommand() {
         val connector = FridaConnector(
             packageName = packageName,
             deviceId = device,
+            port = port,
         )
 
         if (!connector.connect()) {
@@ -189,10 +195,9 @@ class FridaLLMTool : CliktCommand() {
         when (queryType) {
             QueryRouter.QueryType.SPECIFIC -> {
                 println("\n✅ Specific query detected - Fast path!")
-                handleSpecificQuery(
+                handleNormalBypass(
                     query = query,
                     parser = parser,
-                    connector = connector,
                     promptBuilder = promptBuilder,
                     llmClient = llmClient,
                     executor = executor
@@ -212,6 +217,19 @@ class FridaLLMTool : CliktCommand() {
 
             QueryRouter.QueryType.GENERIC -> {
                 println("\n🔎 Generic query - Full context collection")
+
+                // Detectar se é SSL Pinning bypass
+                val isSSLBypass = query.lowercase().let { q ->
+                    q.contains("ssl") || q.contains("pinning") ||
+                            q.contains("certificate") || q.contains("certificatepinner")
+                }
+
+                // Se for SSL bypass, usar o orquestrador especializado
+                if (isSSLBypass) {
+                    handleSSLBypass(connector, llmClient, executor)
+                    return
+                }
+
                 handleGenericQuery(
                     query = query,
                     collector = collector,
@@ -221,30 +239,6 @@ class FridaLLMTool : CliktCommand() {
                 )
             }
         }
-    }
-
-    private suspend fun handleSpecificQuery(
-        query: String,
-        parser: QueryParser,
-        connector: FridaConnector,
-        promptBuilder: PromptBuilder,
-        llmClient: LLMClient?,
-        executor: ScriptExecutor
-    ) {
-        // Detectar se é SSL Pinning bypass
-        val isSSLBypass = query.lowercase().let { q ->
-            q.contains("ssl") || q.contains("pinning") ||
-                    q.contains("certificate") || q.contains("certificatepinner")
-        }
-
-        // Se for SSL bypass, usar o orquestrador especializado
-        if (isSSLBypass) {
-            handleSSLBypass(connector, llmClient, executor)
-            return
-        }
-
-        // Fluxo normal para outros tipos de hooks
-        handleNormalBypass(query, parser, promptBuilder, llmClient, executor)
     }
 
     /**
@@ -540,11 +534,8 @@ class FridaLLMTool : CliktCommand() {
             logger.info { "Context saved to: $path" }
         }
 
-        val relevantClasses = context.classes.filter { classInfo ->
-            hints.any { hint ->
-                classInfo.name.contains(hint, ignoreCase = true)
-            }
-        }.filter { !it.name.contains("$") && !it.name.contains("kt", ignoreCase = true) }
+        val relevantClasses =
+            context.classes.filter { !it.name.contains("$") && !it.name.contains("kt", ignoreCase = true) }
 
         println("\n✅ Found ${relevantClasses.size} relevant classes:")
         relevantClasses.take(10).forEach {
@@ -555,8 +546,6 @@ class FridaLLMTool : CliktCommand() {
         val separators = listOf(
             " AND " to Regex("""\s+AND\s+""", RegexOption.IGNORE_CASE),
             " OR " to Regex("""\s+OR\s+""", RegexOption.IGNORE_CASE),
-            "," to Regex(""",\s*"""),
-            ";" to Regex(""";\s*"""),
             "\n" to Regex("""\n+""")
         )
 
@@ -629,7 +618,7 @@ class FridaLLMTool : CliktCommand() {
 
         // Salvar se solicitado
         saveScript?.let { path ->
-            File(path).writeText(generated.script)
+            File("$path/test.js").writeText(generated.script)
             println("💾 Script saved to: $path")
         }
 
@@ -731,8 +720,6 @@ class FridaLLMTool : CliktCommand() {
         val separators = listOf(
             " AND " to Regex("""\s+AND\s+""", RegexOption.IGNORE_CASE),
             " OR " to Regex("""\s+OR\s+""", RegexOption.IGNORE_CASE),
-            "," to Regex(""",\s*"""),
-            ";" to Regex(""";\s*"""),
             "\n" to Regex("""\n+""")
         )
 
@@ -770,7 +757,7 @@ class FridaLLMTool : CliktCommand() {
 
         // Salvar se solicitado
         saveScript?.let { path ->
-            File(path).writeText(generated.script)
+            File("$path/test.js").writeText(generated.script)
             println("💾 Script saved to: $path")
         }
 
@@ -830,7 +817,7 @@ class FridaLLMTool : CliktCommand() {
         // Mostrar estatísticas
         collector.printStats(context)
 
-//          Salvar JSON se especificado
+        // Salvar JSON se especificado
         output?.let { path ->
             val jsonStr = Json { prettyPrint = true }.encodeToString(context)
 
@@ -841,7 +828,7 @@ class FridaLLMTool : CliktCommand() {
         println()
 
         while (true) {
-            print("frida-llm> ")
+            print("fridagpt> ")
             val input = readLine()?.trim() ?: break
 
             if (input.isEmpty()) continue

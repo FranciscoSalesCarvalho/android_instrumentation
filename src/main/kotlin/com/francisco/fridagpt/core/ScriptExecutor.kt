@@ -115,24 +115,6 @@ class ScriptExecutor(
     }
 
     /**
-     * Executa script de forma interativa (mantém rodando)
-     */
-    suspend fun executeInteractive(script: String): InteractiveExecution {
-        logger.info { "Starting interactive script execution..." }
-
-        val scriptFile = File.createTempFile("frida_interactive_", ".js")
-        scriptFile.writeText(script)
-
-        logger.info { "Script file: ${scriptFile.absolutePath}" }
-        logger.info { "Script will run until you press Ctrl+C" }
-
-        return InteractiveExecution(
-            scriptFile = scriptFile,
-            connector = connector
-        )
-    }
-
-    /**
      * Extrai mensagem de erro do output
      */
     private fun extractError(output: String): String {
@@ -199,27 +181,5 @@ data class ValidationResult(
             println("\nWarnings:")
             warnings.forEach { println("  ⚠️  $it") }
         }
-    }
-}
-
-/**
- * Execução interativa (mantém script rodando)
- */
-class InteractiveExecution(
-    private val scriptFile: File,
-    private val connector: FridaConnector
-) {
-    suspend fun run() {
-        println("\n🔄 Script is running... Press Ctrl+C to stop")
-        println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
-        // Executa script (ficará rodando)
-        val output = connector.executeScript(scriptFile.readText())
-
-        println(output ?: "No output")
-    }
-
-    fun cleanup() {
-        scriptFile.delete()
     }
 }
