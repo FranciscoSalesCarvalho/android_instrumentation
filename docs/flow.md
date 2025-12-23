@@ -83,11 +83,11 @@ com.pentestmobile.appwebtest
 --stacktrace "/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/stacktrace.txt"
 
 --package
-com.pentestmobile.appemulator
+jakhar.aseem.diva
 --device
 emulator-5554
 --save-script
-/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/temp.js
+/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/docs/experiments/results/scripts/temp.js
 --interactive
 
 SEMI-SPECIFIC:

@@ -140,11 +140,11 @@ class ContextCollector(
             logger.info { "Collecting context for query: $query" }
 
             // 1. Coleta básica primeiro
-            val basicContext = collectBasicContext() ?: return@coroutineScope null
+            val basicContext = collectFullContext() ?: return@coroutineScope null
 
             // 2. Identifica classes relevantes
             val keywords = extractKeywords(query)
-            val relevantClasses = filterRelevantClasses(basicContext.classes, keywords)
+            val relevantClasses = basicContext.classes
 
             logger.info { "Found ${relevantClasses.size} relevant classes for query" }
 
@@ -236,7 +236,10 @@ class ContextCollector(
     private fun filterRelevantClasses(classes: List<ClassInfo>, keywords: List<String>): List<ClassInfo> {
         // Priorização inteligente
         val priorityClasses = mutableListOf<ClassInfo>()
-        val relevantClasses = mutableListOf<ClassInfo>()
+
+        // MÉDIA PRIORIDADE: Match com keywords
+        val matcher = SimilarityMatcher(threshold = 0.3)
+        val relevantClasses = matcher.filterClassInfos(classes, keywords).map { it.classInfo }
 
         for (classInfo in classes) {
             val className = classInfo.name.lowercase()
@@ -251,11 +254,6 @@ class ContextCollector(
             if (className.contains("mainactivity")) {
                 priorityClasses.add(classInfo)
                 continue
-            }
-
-            // MÉDIA PRIORIDADE: Match com keywords
-            if (keywords.any { keyword -> className.contains(keyword) }) {
-                relevantClasses.add(classInfo)
             }
         }
 

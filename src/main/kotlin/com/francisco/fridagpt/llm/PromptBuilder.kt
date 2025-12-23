@@ -20,16 +20,8 @@ class PromptBuilder {
             You are an expert in Frida dynamic instrumentation for Android.
             
             Generate a Frida script in JavaScript to accomplish the following task:
-            
-            TARGET:
-            - Class: ${parsed.className}
-            - Method: ${parsed.methodName}
-            ${if (parsed.parameters.isNotEmpty()) "- Parameters: ${parsed.parameters.joinToString(", ")}" else ""}
-            ${if (parsed.returnType != null) "- Return Type: ${parsed.returnType}" else ""}
-            
-            ACTION:
-            ${getActionDescription(parsed.action, parsed.returnValue)}
-            
+            ${parsed.originalQuery}
+                
             REQUIREMENTS:
             1. Use Java.perform() wrapper
             2. Hook the exact method specified
@@ -38,6 +30,26 @@ class PromptBuilder {
             5. Log method parameters when called
             6. Implement the required action
             7. Keep code clean and well-commented
+            8. When passing string literals to Android methods (Toast, TextView, Intent, etc.), always convert to Java String:
+               - CORRECT: Java.use("java.lang.String").${'$'}new("message")
+               - WRONG: "message" (JavaScript literal)
+            9. When replacing void method implementations:
+               - Do NOT call the original method (causes infinite recursion)
+               - Do NOT use return statement
+               - Simply implement the new behavior
+            10. When replacing non-void method implementations and you need to call the original:
+                - Use this.methodName.call(this, args) or store original reference before hooking
+            11. Avoid using Java.scheduleOnMainThread() unless strictly necessary:
+                - Methods called from UI events (button clicks, etc.) are already on main thread
+                - If needed, capture 'this' reference before the closure
+            12. When hooking Android framework interfaces, hook the concrete implementation class instead:
+                - SharedPreferences${'$'}Editor → android.app.SharedPreferencesImpl${'$'}EditorImpl
+                - ContentResolver → android.content.ContentResolver (concrete class)
+                - Abstract/interface methods cannot be hooked directly
+                - Common implementations:
+                  * SharedPreferences${'$'}Editor.putString() → android.app.SharedPreferencesImpl${'$'}EditorImpl.putString()
+                  * SharedPreferences${'$'}Editor.commit() → android.app.SharedPreferencesImpl${'$'}EditorImpl.commit()
+                  * SharedPreferences${'$'}Editor.apply() → android.app.SharedPreferencesImpl${'$'}EditorImpl.apply()
             
             OUTPUT:
             Provide ONLY the JavaScript code, no explanations before or after.
@@ -172,6 +184,26 @@ class PromptBuilder {
             5. If multiple methods need to be hooked, hook all of them
             6. Consider the frameworks detected when writing the script
             7. Be specific - use the actual class and method names from the context
+            8. When passing string literals to Android methods (Toast, TextView, Intent, etc.), always convert to Java String:
+               - CORRECT: Java.use("java.lang.String").${'$'}new("message")
+               - WRONG: "message" (JavaScript literal)
+            9. When replacing void method implementations:
+               - Do NOT call the original method (causes infinite recursion)
+               - Do NOT use return statement
+               - Simply implement the new behavior
+            10. When replacing non-void method implementations and you need to call the original:
+                - Use this.methodName.call(this, args) or store original reference before hooking
+            11. Avoid using Java.scheduleOnMainThread() unless strictly necessary
+                - Methods called from UI events (button clicks, etc.) are already on main thread
+            12. When hooking Android framework interfaces, hook the concrete implementation class instead:
+                - SharedPreferences${'$'}Editor → android.app.SharedPreferencesImpl${'$'}EditorImpl
+                - ContentResolver → android.content.ContentResolver (concrete class)
+                - Abstract/interface methods cannot be hooked directly
+                - Common implementations:
+                  * SharedPreferences${'$'}Editor.putString() → android.app.SharedPreferencesImpl${'$'}EditorImpl.putString()
+                  * SharedPreferences${'$'}Editor.commit() → android.app.SharedPreferencesImpl${'$'}EditorImpl.commit()
+                  * SharedPreferences${'$'}Editor.apply() → android.app.SharedPreferencesImpl${'$'}EditorImpl.apply()
+
             
             OUTPUT:
             Provide ONLY the JavaScript code, no explanations.
@@ -219,6 +251,7 @@ class PromptBuilder {
             
             APP INFORMATION:
             - Package: ${context.appInfo.packageName}
+            - Min SDK: ${context.appInfo.minSdk}
             - Target SDK: ${context.appInfo.targetSdk}
             - Debuggable: ${context.appInfo.isDebuggable}
             
@@ -253,6 +286,27 @@ class PromptBuilder {
             4. Add console.log statements
             5. Try multiple common patterns if needed
             6. Comment the code explaining what each hook does
+            8. When passing string literals to Android methods (Toast, TextView, Intent, etc.), always convert to Java String:
+               - CORRECT: Java.use("java.lang.String").${'$'}new("message")
+               - WRONG: "message" (JavaScript literal)
+            9. When replacing void method implementations:
+               - Do NOT call the original method (causes infinite recursion)
+               - Do NOT use return statement
+               - Simply implement the new behavior
+            10. When replacing non-void method implementations and you need to call the original:
+                - Use this.methodName.call(this, args) or store original reference before hooking
+            11. Avoid using Java.scheduleOnMainThread() unless strictly necessary
+                - Methods called from UI events (button clicks, etc.) are already on main thread
+            12. When hooking Android framework interfaces, hook the concrete implementation class instead:
+                - SharedPreferences${'$'}Editor → android.app.SharedPreferencesImpl${'$'}EditorImpl
+                - ContentResolver → android.content.ContentResolver (concrete class)
+                - Abstract/interface methods cannot be hooked directly
+                - Common implementations:
+                  * SharedPreferences${'$'}Editor.putString() → android.app.SharedPreferencesImpl${'$'}EditorImpl.putString()
+                  * SharedPreferences${'$'}Editor.commit() → android.app.SharedPreferencesImpl${'$'}EditorImpl.commit()
+                  * SharedPreferences${'$'}Editor.apply() → android.app.SharedPreferencesImpl${'$'}EditorImpl.apply()
+            13. Avoid overload any method from java api. Is too easy to make the application crash when done.
+            14. When asked to bypass password replace true stick to boolean methods
             
             OUTPUT:
             Provide ONLY the JavaScript code, no explanations.
@@ -265,10 +319,10 @@ class PromptBuilder {
     private fun getActionDescription(action: ActionType, returnValue: String?): String {
         return when (action) {
             ActionType.RETURN_FALSE ->
-                "Always return false (bypass the check)"
+                returnValue ?: "Always return false (bypass the check)"
 
             ActionType.RETURN_TRUE ->
-                "Always return true"
+                returnValue ?: "Always return true"
 
             ActionType.RETURN_NULL ->
                 "Always return null"
@@ -277,13 +331,13 @@ class PromptBuilder {
                 "Return the value: $returnValue"
 
             ActionType.LOG_CALLS ->
-                "Log all method calls with parameters and return values"
+                returnValue ?: "Log all method calls with parameters and return values"
 
             ActionType.MODIFY_PARAMS ->
                 "Intercept and modify method parameters"
 
             ActionType.HOOK_GENERIC ->
-                "Hook the method and log when it's called"
+                returnValue ?: "Hook the method and log when it's called"
         }
     }
 }
