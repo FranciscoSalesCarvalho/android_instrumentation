@@ -2,8 +2,9 @@ package com.francisco.fridagpt.core
 
 import com.francisco.fridagpt.collectors.AppInfoCollector
 import com.francisco.fridagpt.collectors.ClassCollector
-import com.francisco.fridagpt.collectors.FrameworkDetector
+import com.francisco.fridagpt.collectors.LibraryDetector
 import com.francisco.fridagpt.collectors.ManifestCollector
+import com.francisco.fridagpt.collectors.NativeLibraryCollector
 import com.francisco.fridagpt.collectors.StorageCollector
 import com.francisco.fridagpt.models.AppContext
 import com.francisco.fridagpt.models.ClassCategory
@@ -22,9 +23,10 @@ class ContextCollector(
 ) {
     private val appInfoCollector = AppInfoCollector(connector)
     private val classCollector = ClassCollector(connector)
+    private val libraryDetector = LibraryDetector(connector)
     private val manifestCollector = ManifestCollector(connector)
-    private val frameworkDetector = FrameworkDetector(connector)
     private val storageCollector = StorageCollector(connector)
+    private val nativeCollector = NativeLibraryCollector(connector)
 
     /**
      * Coleta contexto básico (apenas essencial - mais rápido)
@@ -36,8 +38,9 @@ class ContextCollector(
             val appInfo = appInfoCollector.collect()
             val classes = classCollector.collectAppClassesOnly()
             val manifest = manifestCollector.collect()
-            val frameworks = frameworkDetector.detect()
+            val native = nativeCollector.collect()
             val storage = storageCollector.collect()
+            val libraries = libraryDetector.detect()
 
             if (appInfo == null) {
                 logger.error { "Failed to collect app info" }
@@ -50,9 +53,10 @@ class ContextCollector(
             AppContext(
                 appInfo = appInfo,
                 classes = classes,
-                frameworks = frameworks,
+                libraries = libraries,
                 manifest = manifest,
                 storage = storage,
+                nativeContext = native,
             )
         } catch (e: Exception) {
             logger.error(e) { "Basic context collection failed: ${e.message}" }
@@ -169,7 +173,7 @@ class ContextCollector(
             AppContext(
                 appInfo = basicContext.appInfo,
                 classes = classesWithMethods,
-                frameworks = basicContext.frameworks,
+                libraries = basicContext.libraries,
                 manifest = basicContext.manifest,
                 storage = null
             )
@@ -197,7 +201,7 @@ class ContextCollector(
             val classes = classCollector.collectAppClassesOnly().filter { classInfo ->
                 !classInfo.name.contains("$")
             }
-            val frameworks = frameworkDetector.detect()
+            val frameworks = libraryDetector.detect()
 
             logger.info { "Basic context collected" }
             logger.info { "  - App classes: ${classes.size}" }
@@ -206,7 +210,7 @@ class ContextCollector(
             AppContext(
                 appInfo = appInfo,
                 classes = classes,
-                frameworks = frameworks,
+                libraries = frameworks,
                 manifest = null,
                 storage = null
             )
@@ -318,8 +322,8 @@ class ContextCollector(
         logger.info { "  - App: ${context.classes.count { it.category == ClassCategory.APP }}" }
         logger.info { "  - Library: ${context.classes.count { it.category == ClassCategory.LIBRARY }}" }
         logger.info { "  - Android: ${context.classes.count { it.category == ClassCategory.ANDROID }}" }
-        logger.info { "Frameworks detected: ${context.frameworks.size}" }
-        context.frameworks.forEach { fw ->
+        logger.info { "Libraries detected: ${context.libraries.size}" }
+        context.libraries.forEach { fw ->
             logger.info { "  - ${fw.name} ${fw.version ?: ""} (${fw.type})" }
         }
 
@@ -327,6 +331,23 @@ class ContextCollector(
         val totalMethods = context.classes.sumOf { it.methods.size }
         if (totalMethods > 0) {
             logger.info { "Methods collected: $totalMethods" }
+        }
+
+        if (context.nativeContext != null) {
+            val native = context.nativeContext!!
+            logger.info { "Native modules: ${native.summary.app} app / ${native.summary.total} total" }
+            logger.info { "  - Arch: ${native.arch} (${native.pointerSize * 8}-bit)" }
+            native.modules.forEach { mod ->
+                logger.info { "  - ${mod.name} (${mod.exports.size} exports)" }
+            }
+            if (native.protections.isNotEmpty()) {
+                logger.info { "Native protections: ${native.protections.size}" }
+                native.protections.forEach { p ->
+                    logger.info { "  - [${p.category}] ${p.func} @ ${p.module}" }
+                }
+            }
+        } else {
+            logger.info { "Native modules: none detected" }
         }
 
         logger.info { "=========================" }

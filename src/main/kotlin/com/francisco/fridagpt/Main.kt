@@ -828,7 +828,7 @@ class FridaLLMTool : CliktCommand() {
         println()
 
         while (true) {
-            print("fridagpt> ")
+            print("fridaforge> ")
             val input = readLine()?.trim() ?: break
 
             if (input.isEmpty()) continue
@@ -860,10 +860,10 @@ class FridaLLMTool : CliktCommand() {
 
                 input.lowercase() == "frameworks" -> {
                     println("\n🔧 Detected Frameworks:")
-                    if (context.frameworks.isEmpty()) {
+                    if (context.libraries.isEmpty()) {
                         println("   No frameworks detected")
                     } else {
-                        context.frameworks.forEach { fw ->
+                        context.libraries.forEach { fw ->
                             println("   ${fw.name} ${fw.version ?: ""} (${fw.type})")
                         }
                     }

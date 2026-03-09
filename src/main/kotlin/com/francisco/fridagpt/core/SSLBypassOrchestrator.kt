@@ -1,7 +1,7 @@
 package com.francisco.fridagpt.core
 
 import com.francisco.fridagpt.collectors.AppInfoCollector
-import com.francisco.fridagpt.collectors.FrameworkDetector
+import com.francisco.fridagpt.collectors.LibraryDetector
 import com.francisco.fridagpt.llm.LLMClient
 import com.francisco.fridagpt.models.AppInfo
 import com.francisco.fridagpt.models.FrameworkType
@@ -186,8 +186,8 @@ class SSLBypassOrchestrator(
             println("🔍 Detecting networking frameworks...")
             println()
 
-            val frameworkDetector = FrameworkDetector(connector)
-            val frameworks = frameworkDetector.detect()
+            val libraryDetector = LibraryDetector(connector)
+            val frameworks = libraryDetector.detect()
 
             val networkingFws = frameworks.filter {
                 it.type == FrameworkType.NETWORKING

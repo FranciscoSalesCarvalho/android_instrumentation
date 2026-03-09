@@ -6,6 +6,7 @@ import com.francisco.fridagpt.core.ParsedQuery
 import com.francisco.fridagpt.models.AppContext
 import com.francisco.fridagpt.models.ClassCategory
 import com.francisco.fridagpt.models.ClassInfo
+import com.francisco.fridagpt.models.NativeContext
 
 /**
  * Constrói prompts otimizados para o LLM
@@ -160,7 +161,7 @@ class PromptBuilder {
             - Debuggable: ${context.appInfo.isDebuggable}
             
             DETECTED FRAMEWORKS:
-            ${context.frameworks.take(5).joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
+            ${context.libraries.take(5).joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
             
             RELEVANT CLASSES FOUND:
             $classesInfo
@@ -243,6 +244,8 @@ class PromptBuilder {
             """.trimIndent()
         }
 
+        val nativeSection = buildNativeSection(context.nativeContext)
+
         return """
             You are an expert in Frida dynamic instrumentation for Android.
             
@@ -256,10 +259,12 @@ class PromptBuilder {
             - Debuggable: ${context.appInfo.isDebuggable}
             
             DETECTED FRAMEWORKS:
-            ${context.frameworks.joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
+            ${context.libraries.joinToString("\n") { "- ${it.name} ${it.version ?: ""} (${it.type})" }}
             
             RELEVANT CLASSES FOUND:
             $classesInfo
+            
+            $nativeSection
             
             TASK:
             Based on the user request and app information, generate a Frida script to accomplish the goal.
@@ -338,6 +343,77 @@ class PromptBuilder {
 
             ActionType.HOOK_GENERIC ->
                 returnValue ?: "Hook the method and log when it's called"
+        }
+    }
+
+    /**
+     * Gera a seção de contexto nativo para inclusão no prompt.
+     *
+     * Prioriza informações de proteção (o que realmente importa para o LLM
+     * gerar scripts que lidem com anti-análise), seguido de métodos JNI
+     * e resumo de módulos.
+     *
+     * @param nativeContext contexto nativo coletado, ou null se indisponível
+     * @return string formatada para injeção no prompt, ou vazia se sem contexto
+     */
+    private fun buildNativeSection(nativeContext: NativeContext?): String {
+        if (nativeContext == null) return ""
+
+        val sb = StringBuilder()
+        sb.appendLine()
+        sb.appendLine("NATIVE CODE CONTEXT:")
+        sb.appendLine("- Architecture: ${nativeContext.arch}")
+        sb.appendLine("- Pointer size: ${nativeContext.pointerSize} bytes")
+        sb.appendLine("- Modules: ${nativeContext.summary.app} app / ${nativeContext.summary.total} total")
+
+        // 1. Proteções detectadas (prioridade máxima para o LLM)
+        if (nativeContext.protections.isNotEmpty()) {
+            sb.appendLine()
+            sb.appendLine("NATIVE PROTECTIONS DETECTED:")
+
+            val byCategory = nativeContext.protections.groupBy { it.category }
+            byCategory.forEach { (category, detections) ->
+                sb.appendLine("  [$category]")
+                detections.forEach { det ->
+                    sb.appendLine("    - ${det.func} @ ${det.module} (${det.address})")
+                }
+            }
+        }
+
+        // 2. Módulos do app com exports
+        if (nativeContext.modules.isNotEmpty()) {
+            sb.appendLine()
+            sb.appendLine("APP NATIVE MODULES (${nativeContext.modules.size}):")
+            nativeContext.modules.forEach { mod ->
+                sb.appendLine("  - ${mod.name} (${formatSize(mod.size)}, ${mod.exports.size} exports)")
+                if (mod.exports.isNotEmpty()) {
+                    mod.exports.take(30).forEach { exp ->
+                        sb.appendLine("      $exp")
+                    }
+                    if (mod.exports.size > 30) {
+                        sb.appendLine("      ... and ${mod.exports.size - 30} more")
+                    }
+                }
+            }
+        }
+
+        // 3. Instrução ao LLM se proteções detectadas
+        if (nativeContext.protections.isNotEmpty()) {
+            sb.appendLine()
+            sb.appendLine("IMPORTANT: This application has native-level protections.")
+            sb.appendLine("The generated script MUST account for these protections.")
+            sb.appendLine("Use Interceptor.attach() with Module.findExportByName() to hook native functions.")
+            sb.appendLine("Consider bypassing detection mechanisms BEFORE performing the requested task.")
+        }
+
+        return sb.toString()
+    }
+
+    private fun formatSize(bytes: Long): String {
+        return when {
+            bytes < 1024 -> "${bytes}B"
+            bytes < 1024 * 1024 -> "${bytes / 1024}KB"
+            else -> "${"%.1f".format(bytes.toDouble() / (1024 * 1024))}MB"
         }
     }
 }

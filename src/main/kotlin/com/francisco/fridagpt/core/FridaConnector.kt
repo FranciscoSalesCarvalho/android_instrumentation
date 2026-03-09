@@ -287,4 +287,125 @@ class FridaConnector(
             add(scriptPath)
         }
     }
+
+    /**
+     * Executa script via Frida em modo attach (-n appName).
+     * O -n usa o nome do app (ex: "DamnVulnerableBank"), não o package name.
+     * Resolve o nome automaticamente via frida-ps.
+     * Se o app não estiver rodando, inicia via adb antes do attach.
+     */
+    suspend fun executeScriptAttach(scriptContent: String): String? = withContext(Dispatchers.IO) {
+        if (!isConnected) {
+            logger.error { "Not connected! Call connect() first" }
+            return@withContext null
+        }
+
+        try {
+            // Garantir que o app está rodando antes do attach
+            val appName = resolveAppName()
+            if (appName == null) {
+                logger.info { "App not running, launching via adb..." }
+                spawnApp()
+                val retryName = resolveAppName()
+                if (retryName == null) {
+                    logger.error { "App failed to start: $packageName" }
+                    return@withContext null
+                }
+                return@withContext executeAttach(scriptContent, retryName)
+            }
+
+            executeAttach(scriptContent, appName)
+
+        } catch (e: Exception) {
+            logger.error(e) { "Attach script execution error: ${e.message}" }
+            null
+        }
+    }
+
+    /**
+     * Resolve o nome do app (como aparece no frida-ps) a partir do package name.
+     * Ex: "com.app.damnvulnerablebank" → "DamnVulnerableBank"
+     * Retorna null se o app não estiver rodando.
+     */
+    private fun resolveAppName(): String? {
+        return try {
+            val cmd = if (deviceId != null)
+                listOf("frida-ps", "-D", deviceId, "-a")
+            else
+                listOf("frida-ps", "-U", "-a")
+
+            val proc = ProcessBuilder(cmd).start()
+            val output = proc.inputStream.bufferedReader().readText()
+            proc.waitFor()
+
+            // frida-ps -a retorna linhas como:
+            //   PID  Name              Identifier
+            //  1234  DamnVulnerableBank  com.app.damnvulnerablebank
+            output.lines()
+                .filter { it.contains(packageName) }
+                .firstOrNull()
+                ?.trim()
+                ?.split("\\s{2,}".toRegex()) // colunas separadas por 2+ espaços
+                ?.getOrNull(1)               // segunda coluna = Name
+        } catch (e: Exception) {
+            logger.warn { "Failed to resolve app name: ${e.message}" }
+            null
+        }
+    }
+
+    /**
+     * Executa o attach com o nome do app já resolvido
+     */
+    private fun executeAttach(scriptContent: String, appName: String): String? {
+        val scriptFile = File.createTempFile("frida_", ".js")
+        scriptFile.writeText(scriptContent)
+
+        val command = buildList {
+            add("frida")
+            if (deviceId != null) { add("-D"); add(deviceId) } else { add("-U") }
+            add("-n")
+            add(appName)
+            add("-l")
+            add(scriptFile.absolutePath)
+        }
+
+        logger.debug { "Executing (attach): ${command.joinToString(" ")}" }
+
+        val processBuilder = ProcessBuilder(command)
+        processBuilder.redirectErrorStream(true)
+
+        val proc = processBuilder.start()
+        val output = StringBuilder()
+
+        // Lê output
+        BufferedReader(InputStreamReader(proc.inputStream)).use { reader ->
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                line?.let {
+                    // Recebeu payload do send() — podemos encerrar
+                    if (it.contains("message")) {
+                        logger.debug { "Frida: $it" }
+                        output.appendLine(it)
+                    }
+                }
+
+                if (output.isNotEmpty())
+                    break
+            }
+        }
+
+        scriptFile.delete()
+
+        val raw = output.toString()
+        val payloadRegex = """"payload"\s*:\s*"(.+?)"\s*\}""".toRegex()
+        val match = payloadRegex.find(raw)
+
+        return if (match != null) {
+            match.groupValues[1]
+                .replace("\\\"", "\"")
+                .replace("\\\\", "\\")
+        } else {
+            raw.ifBlank { null }
+        }
+    }
 }

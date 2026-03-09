@@ -9,9 +9,10 @@ import kotlinx.serialization.Serializable
 data class AppContext(
     val appInfo: AppInfo,
     val classes: List<ClassInfo>,
-    val frameworks: List<FrameworkInfo>,
+    val libraries: List<FrameworkInfo>,
     val manifest: ManifestInfo? = null,
-    val storage: StorageInfo? = null
+    val storage: StorageInfo? = null,
+    val nativeContext: NativeContext? = null
 )
 
 /**
