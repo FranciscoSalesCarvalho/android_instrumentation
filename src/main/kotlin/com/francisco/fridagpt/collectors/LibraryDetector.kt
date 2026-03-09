@@ -12,7 +12,7 @@ private val logger = KotlinLogging.logger {}
 /**
  * Detecta frameworks e bibliotecas utilizadas pelo app
  */
-class FrameworkDetector(
+class LibraryDetector(
     private val connector: FridaConnector
 ) {
     private val json = Json { ignoreUnknownKeys = true }
