@@ -2,6 +2,7 @@ package com.francisco.fridagpt.collectors
 
 import com.francisco.fridagpt.core.FridaConnector
 import com.francisco.fridagpt.models.NativeContext
+import com.francisco.fridagpt.utils.ScriptLoader
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 
@@ -34,7 +35,7 @@ class NativeLibraryCollector(
         logger.info { "Collecting native library context..." }
 
         return try {
-            val script = loadScript()
+            val script = ScriptLoader.load(SCRIPT_RESOURCE)
             val rawOutput = connector.executeScriptAttach(script)
 
             if (rawOutput.isNullOrBlank()) {
@@ -63,13 +64,6 @@ class NativeLibraryCollector(
             logger.error(e) { "Native library collection failed: ${e.message}" }
             null
         }
-    }
-
-    private fun loadScript(): String {
-        return this::class.java.classLoader
-            ?.getResourceAsStream(SCRIPT_RESOURCE)
-            ?.bufferedReader()?.use { it.readText() }
-            ?: throw IllegalStateException("Script not found: $SCRIPT_RESOURCE")
     }
 
     /**

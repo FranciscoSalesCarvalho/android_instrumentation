@@ -38,9 +38,9 @@ class ContextCollector(
             val appInfo = appInfoCollector.collect()
             val classes = classCollector.collectAppClassesOnly()
             val manifest = manifestCollector.collect()
-            val native = nativeCollector.collect()
             val storage = storageCollector.collect()
             val libraries = libraryDetector.detect()
+            val native = nativeCollector.collect()
 
             if (appInfo == null) {
                 logger.error { "Failed to collect app info" }

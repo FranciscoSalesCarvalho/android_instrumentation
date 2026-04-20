@@ -80,7 +80,7 @@ com.pentestmobile.appwebtest
 "ssl pinning"
 --save-script
 "/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/pinning.js"
---stacktrace "/Users/thoughtworks/Documents/personal/mestrado/FridaGPT/scripts/stacktrace.txt"
+--stacktrace "/Users/thoughtworks/Documents/personal/mestrado/resultados/androgoat/t3_ssl_pinning/stacktrace.txt"
 
 --package
 jakhar.aseem.diva
