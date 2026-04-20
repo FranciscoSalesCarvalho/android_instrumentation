@@ -3,6 +3,7 @@ package com.francisco.fridagpt.collectors
 import com.francisco.fridagpt.core.FridaConnector
 import com.francisco.fridagpt.models.ClassCategory
 import com.francisco.fridagpt.models.ClassInfo
+import com.francisco.fridagpt.utils.ScriptLoader
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 
@@ -22,7 +23,7 @@ class ClassCollector(
     suspend fun collect(): List<ClassInfo> {
         logger.info { "Collecting all classes..." }
 
-        val script = getAllClassesScript()
+        val script = ScriptLoader.load("frida-scripts/collectors/all_classes.js")
         val rawOutput = connector.executeScript(script) ?: return emptyList()
 
         return parseClassesOutput(rawOutput)
@@ -34,7 +35,7 @@ class ClassCollector(
     suspend fun collectAppClassesOnly(): List<ClassInfo> {
         logger.info { "Collecting app classes only..." }
 
-        val script = getAppClassesScript()
+        val script = ScriptLoader.load("frida-scripts/collectors/app_classes.js")
         val rawOutput = connector.executeScript(script) ?: return emptyList()
 
         return parseClassesOutput(rawOutput)
@@ -83,57 +84,5 @@ class ClassCollector(
 
             else -> ClassCategory.LIBRARY
         }
-    }
-
-    private fun getAllClassesScript(): String {
-        return """
-            Java.perform(function() {
-                console.log("[+] Enumerating all classes...");
-                
-                var classes = [];
-                
-                Java.enumerateLoadedClasses({
-                    onMatch: function(className) {
-                        classes.push(className);
-                    },
-                    onComplete: function() {
-                        console.log("[+] Found " + classes.length + " classes");
-                        console.log("UFAM")
-                        console.log(JSON.stringify(classes));
-                        console.log("UFAM")
-                    }
-                });
-            });
-        """.trimIndent()
-    }
-
-    private fun getAppClassesScript(): String {
-        return """
-            Java.perform(function() {
-                console.log("[+] Enumerating app classes...");
-                
-                var context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
-                var packageManager = context.getPackageManager();
-                
-                var packageName = context.getPackageName();
-                
-                var classes = [];
-                
-                Java.enumerateLoadedClasses({
-                    onMatch: function(className) {
-                        // Filtrar apenas classes do app (não android/java/kotlin)
-                        if (className.startsWith(packageName)) {
-                            classes.push(className);
-                        }
-                    },
-                    onComplete: function() {
-                        console.log("[+] Found " + classes.length + " app classes");
-                        console.log("UFAM")
-                        console.log(JSON.stringify(classes));
-                        console.log("UFAM")
-                    }
-                });
-            });
-        """.trimIndent()
     }
 }

@@ -140,7 +140,7 @@ class QueryParser {
      *   - hook com.pentestmobile.MainActivity.checkDevice()Z
      */
     private fun parseHookPattern(original: String): ParsedQuery? {
-        val pattern = Regex("""(hook|bypass|intercept|return|overload implementation of|replace implementation of)\s+(?<package>.*)\.(?<class>[^.\s(]+)\.(?<method>[^(]+)\((?<params>.*)\)(?<description>.*)""")
+        val pattern = Regex("""(hook|bypass|intercept|return|overload implementation of|replace implementation of|log)\s+(?<package>.*)\.(?<class>[^.\s(]+)\.(?<method>[^(]+)\((?<params>.*)\)(?<description>.*)""")
 
         val match = pattern.find(original) ?: return null
 

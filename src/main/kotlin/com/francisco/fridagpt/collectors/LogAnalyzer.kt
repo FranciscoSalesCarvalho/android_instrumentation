@@ -1,6 +1,7 @@
 package com.francisco.fridagpt.collectors
 
 import com.francisco.fridagpt.core.FridaConnector
+import com.francisco.fridagpt.utils.ScriptLoader
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
@@ -21,7 +22,7 @@ class LogAnalyzer(
     suspend fun analyzeLogs(durationSeconds: Int = 30): LogAnalysisResult {
         logger.info { "Starting log analysis for ${durationSeconds}s..." }
 
-        val script = getLogInterceptionScript()
+        val script = ScriptLoader.load("frida-scripts/collectors/log.js")
         val output = connector.executeScript(script) ?: return LogAnalysisResult(
             logs = emptyList(),
             sensitiveLogs = emptyList(),
@@ -29,108 +30,6 @@ class LogAnalyzer(
         )
 
         return parseLogs(output)
-    }
-
-    /**
-     * Script Frida que intercepta TODOS os métodos de logging
-     */
-    private fun getLogInterceptionScript(): String {
-        return """
-            Java.perform(function() {
-                console.log("[+] Starting log interception...");
-                
-                var logs = [];
-                
-                // Hook android.util.Log (todos os níveis)
-                var Log = Java.use("android.util.Log");
-                
-                // Verbose
-                Log.v.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
-                    var log = {
-                        level: "VERBOSE",
-                        tag: tag,
-                        message: msg,
-                        timestamp: Date.now()
-                    };
-                    logs.push(log);
-                    return this.v(tag, msg);
-                };
-                
-                // Debug
-                Log.d.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
-                    var log = {
-                        level: "DEBUG",
-                        tag: tag,
-                        message: msg,
-                        timestamp: Date.now()
-                    };
-                    logs.push(log);
-                    return this.d(tag, msg);
-                };
-                
-                // Info
-                Log.i.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
-                    var log = {
-                        level: "INFO",
-                        tag: tag,
-                        message: msg,
-                        timestamp: Date.now()
-                    };
-                    logs.push(log);
-                    return this.i(tag, msg);
-                };
-                
-                // Warning
-                Log.w.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
-                    var log = {
-                        level: "WARNING",
-                        tag: tag,
-                        message: msg,
-                        timestamp: Date.now()
-                    };
-                    logs.push(log);
-                    return this.w(tag, msg);
-                };
-                
-                // Error
-                Log.e.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
-                    var log = {
-                        level: "ERROR",
-                        tag: tag,
-                        message: msg,
-                        timestamp: Date.now()
-                    };
-                    logs.push(log);
-                    return this.e(tag, msg);
-                };
-                
-                // Hook System.out.println
-                var System = Java.use("java.lang.System");
-                var PrintStream = Java.use("java.io.PrintStream");
-                
-                PrintStream.println.overload('java.lang.String').implementation = function(msg) {
-                    var log = {
-                        level: "PRINTLN",
-                        tag: "System.out",
-                        message: msg,
-                        timestamp: Date.now()
-                    };
-                    logs.push(log);
-                    return this.println(msg);
-                };
-                
-                console.log("[+] Log hooks installed");
-                console.log("[+] Monitoring logs for 30 seconds...");
-                
-                // Após 30 segundos, output logs coletados
-                setTimeout(function() {
-                    console.log("[+] Log collection complete");
-                    console.log("UFAM");
-                    console.log(JSON.stringify({logs: logs}));
-                    console.log("UFAM");
-                }, 30000);
-            });
-        """.trimIndent()
     }
 
     /**
@@ -408,12 +307,6 @@ data class LogStatistics(
 
 enum class SensitivityLevel {
     NONE, LOW, MEDIUM, HIGH;
-
-    companion object {
-        fun max(a: SensitivityLevel, b: SensitivityLevel): SensitivityLevel {
-            return if (a.ordinal > b.ordinal) a else b
-        }
-    }
 }
 
 enum class SensitivePattern(val displayName: String, val severity: SensitivityLevel) {

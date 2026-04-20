@@ -2,6 +2,7 @@ package com.francisco.fridagpt.collectors
 
 import com.francisco.fridagpt.core.FridaConnector
 import com.francisco.fridagpt.models.AppInfo
+import com.francisco.fridagpt.utils.ScriptLoader
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
@@ -21,7 +22,7 @@ class AppInfoCollector(
     suspend fun collect(): AppInfo? {
         logger.info { "Collecting app info..." }
 
-        val script = getAppInfoScript()
+        val script = ScriptLoader.load("frida-scripts/collectors/app_info.js")
         val rawOutput = connector.executeScript(script) ?: return null
 
         return try {
@@ -49,43 +50,6 @@ class AppInfoCollector(
             logger.error(e) { "Failed to parse app info: ${e.message}" }
             null
         }
-    }
-
-    /**
-     * Script Frida para coletar informações do app
-     */
-    private fun getAppInfoScript(): String {
-        return """
-            Java.perform(function() {
-                try {
-                    var context = Java.use("android.app.ActivityThread").currentApplication().getApplicationContext();
-                    var packageManager = context.getPackageManager();
-                    
-                    var packageName = context.getPackageName();
-                    var minSdk = context.getApplicationInfo().minSdkVersion.value;
-                    var targetSdk = context.getApplicationInfo().targetSdkVersion.value;
-                    var debuggable = (context.getApplicationInfo().flags.value & 2) !== 0;
-                    var allowBackup = (context.getApplicationInfo().flags.value & 0x8000) !== 0;
-                    var dataDir = context.getApplicationInfo().dataDir.value; 
-                    
-                    var result = {
-                        packageName: packageName,
-                        targetSdk: targetSdk,
-                        minSdk: minSdk,
-                        isDebuggable: debuggable,
-                        allowBackup: allowBackup,
-                        dataDir: dataDir
-                    };
-                    
-                    // Output como JSON
-                    console.log("UFAM");
-                    console.log(JSON.stringify(result, null, 2));
-                    console.log("UFAM");
-                } catch (error) {
-                    console.error("Error: " + error);
-                }
-            });
-        """.trimIndent()
     }
 
     @Serializable

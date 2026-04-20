@@ -315,7 +315,6 @@ class FridaConnector(
             }
 
             executeAttach(scriptContent, appName)
-
         } catch (e: Exception) {
             logger.error(e) { "Attach script execution error: ${e.message}" }
             null
@@ -362,7 +361,15 @@ class FridaConnector(
 
         val command = buildList {
             add("frida")
-            if (deviceId != null) { add("-D"); add(deviceId) } else { add("-U") }
+            if (port == FRIDA_SERVER_PORT && deviceId == null) {
+                add("-U")
+            } else if (port != FRIDA_SERVER_PORT) {
+                add("-H")
+                add("127.0.0.1:$port")
+            } else if (deviceId != null) {
+                add("-D")
+                add(deviceId)
+            }
             add("-n")
             add(appName)
             add("-l")
