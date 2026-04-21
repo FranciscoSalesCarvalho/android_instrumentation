@@ -1,0 +1,35 @@
+System.err              owasp.sat.agoat                      W  javax.net.ssl.SSLPeerUnverifiedException: Certificate pinning failure!
+System.err              owasp.sat.agoat                      W    Peer certificate chain:
+System.err              owasp.sat.agoat                      W      sha256/aJLOX6Xx6F0u4gC5P/f21/cK77FnXfUxqlXl/xJZNMA=: CN=owasp.org,OU=PortSwigger CA,O=PortSwigger,C=PortSwigger
+System.err              owasp.sat.agoat                      W      sha256/+EK1VeuV+tBwnO9ucl9XyXgWmnmAax3Si20ROueZnBY=: CN=PortSwigger CA,OU=PortSwigger CA,O=PortSwigger,L=PortSwigger,ST=PortSwigger,C=PortSwigger
+System.err              owasp.sat.agoat                      W    Pinned certificates for owasp.org:
+System.err              owasp.sat.agoat                      W      sha256/gdU/UHClHJBFbIdeKuyHm/Lq/aQvMLyuTtcvTEE/1JQ=
+System.err              owasp.sat.agoat                      W      sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=
+System.err              owasp.sat.agoat                      W      sha256/Vjs8r4z+80wjNcr1YKepWQboSIRi63WsWXhIMN+eWys=
+System.err              owasp.sat.agoat                      W  	at okhttp3.CertificatePinner.check(CertificatePinner.java:204)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.connection.RealConnection.connectTls(RealConnection.java:294)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.connection.RealConnection.establishProtocol(RealConnection.java:251)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.connection.RealConnection.connect(RealConnection.java:151)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.connection.StreamAllocation.findConnection(StreamAllocation.java:192)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.connection.StreamAllocation.findHealthyConnection(StreamAllocation.java:121)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.connection.StreamAllocation.newStream(StreamAllocation.java:100)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.connection.ConnectInterceptor.intercept(ConnectInterceptor.java:42)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:92)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:67)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.cache.CacheInterceptor.intercept(CacheInterceptor.java:93)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:92)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:67)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.http.BridgeInterceptor.intercept(BridgeInterceptor.java:93)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:92)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.http.RetryAndFollowUpInterceptor.intercept(RetryAndFollowUpInterceptor.java:120)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:92)
+System.err              owasp.sat.agoat                      W  	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:67)
+System.err              owasp.sat.agoat                      W  	at okhttp3.RealCall.getResponseWithInterceptorChain(RealCall.java:185)
+System.err              owasp.sat.agoat                      W  	at okhttp3.RealCall.execute(RealCall.java:69)
+System.err              owasp.sat.agoat                      W  	at owasp.sat.agoat.TrafficActivity$doPinning$1.invoke(TrafficActivity.kt:115)
+System.err              owasp.sat.agoat                      W  	at owasp.sat.agoat.TrafficActivity$doPinning$1.invoke(TrafficActivity.kt:20)
+System.err              owasp.sat.agoat                      W  	at org.jetbrains.anko.AsyncKt$doAsync$1.invoke(Async.kt:140)
+System.err              owasp.sat.agoat                      W  	at org.jetbrains.anko.AsyncKt$doAsync$1.invoke(Unknown Source:0)
+System.err              owasp.sat.agoat                      W  	at org.jetbrains.anko.AsyncKt$sam$Callable$761a5578.call(Unknown Source:2)
+System.err              owasp.sat.agoat                      W  	at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+System.err              owasp.sat.agoat                      W  	at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:348)

@@ -1,419 +1,304 @@
-# Frida-LLM Tool 🤖
+# FridaForge
 
-AI-Powered Frida instrumentation tool for Android security research.
+**Automated Frida Script Generation for Android Security Analysis using LLMs and Dynamic Application Context**
 
-## Features
+FridaForge automates the generation of Frida instrumentation scripts from natural language queries. It collects runtime context from the target Android application (loaded classes, methods, libraries, native modules, storage) and uses it to guide an LLM in producing functional, application-specific scripts.
 
-✅ **Smart Query Routing** - Automatically detects query type and optimizes processing  
-✅ **Context-Aware** - Collects app structure intelligently  
-✅ **Claude AI Integration** - Generates Frida scripts using Claude API  
-✅ **On-Demand Collection** - Only collects what's needed  
-✅ **Interactive Mode** - REPL for rapid testing
+> **Paper:** *FridaForge: Geração Automatizada de Scripts de Instrumentação Dinâmica Assistida por Modelos de Linguagem com Contexto da Aplicação*  
+> **Venue:** Salão de Ferramentas — SBSeg 2026
+
+🌐 [Versão em Português](README.pt-br.md)
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [Examples](#examples)
+- [Project Structure](#project-structure)
+- [Reproducing Experiments](#reproducing-experiments)
+- [Demo Video](#demo-video)
+- [License](#license)
+- [Citation](#citation)
+
+---
+
+## Overview
+
+Dynamic instrumentation with Frida is essential for Android security analysis, but writing effective scripts requires expertise in the Frida API and knowledge of the target application's internals. FridaForge addresses this by:
+
+1. **Collecting runtime context** — classes, methods, libraries, native modules, databases, and SharedPreferences from the running application
+2. **Building context-aware prompts** — structuring collected information alongside the analyst's natural language query
+3. **Generating executable scripts** — using an LLM to produce Frida JavaScript scripts that reference real application elements
+4. **Validating and executing** — automatically extracting, validating, and injecting the script into the target application
+
+Queries can be formulated at three specificity levels:
+
+| Level | Description | Example |
+|-------|-------------|---------|
+| **Specific** | Full class path and method | `hook com.app.SecurityCheck.isEmulator() return false` |
+| **Semi-specific** | Class or method name without full path | `bypass isEmulator from SecurityCheck` |
+| **Generic** | High-level intent | `bypass emulator detection` |
+
+---
+
+## Requirements
+
+- **OS:** macOS or Linux
+- **Java:** JDK 17+
+- **Android:** Device or emulator with root access
+- **Frida:** v16+ installed on host (`pip install frida-tools`) and Frida Server on device
+- **ADB:** Android Debug Bridge configured and device connected
+- **API Key:** Anthropic API key for Claude access
+
+---
 
 ## Installation
 
-### Prerequisites
+### 1. Clone the repository
 
 ```bash
-# Frida tools
-pip install frida-tools
+git clone https://github.com/FranciscoSalesCarvalho/android_instrumentation.git
+cd android_instrumentation
+```
 
-# Verify installation
+### 2. Install Frida on host
+
+```bash
+pip install frida-tools
 frida --version
 ```
 
-### Build
+### 3. Install Frida Server on device
 
 ```bash
+# Download matching version for your device architecture
+# Push to device
+adb push frida-server /data/local/tmp/
+adb shell "chmod 755 /data/local/tmp/frida-server"
+adb shell "/data/local/tmp/frida-server &"
+```
+
+### 4. Build FridaForge
+
+```bash
+# Option A: Use pre-built jar (no compilation needed)
+java -jar release/fridaforge.jar --help
+ 
+# Option B: Build from source
 ./gradlew build
 ```
 
+### 5. Configure API key
+
+```bash
+export ANTHROPIC_API_KEY="your-api-key-here"
+```
+
+---
+
+## Quick Start
+
+```bash
+# 1. Ensure device is connected and Frida Server is running
+adb devices
+frida-ps -Ua
+
+# 2. Run FridaForge in interactive mode
+./gradlew run --args="-p com.example.app -k $ANTHROPIC_API_KEY -i"
+
+# 3. Type a query
+frida-llm> bypass emulator detection
+```
+
+---
+
 ## Usage
 
-### 1. Setup API Key
+### Interactive Mode (Recommended)
 
 ```bash
-# Option A: Environment variable
-export ANTHROPIC_API_KEY="your-api-key-here"
-
-# Option B: Command line flag
-# Use -k flag (see examples below)
+./gradlew run --args="-p <package_name> -k <api_key> -i"
 ```
 
-### 2. Query Types
+Commands available in interactive mode:
 
-#### 🎯 Specific Query (Fastest - 1-2s)
+| Command | Description |
+|---------|-------------|
+| `<any query>` | Generate and execute a Frida script |
+| `classes` | List collected application classes |
+| `frameworks` | Show detected libraries |
+| `stats` | Display context collection statistics |
+| `help` | Show available commands |
+| `exit` | Quit interactive mode |
 
-When you know the exact class and method:
+### Single Query Mode
 
 ```bash
-./gradlew run --args="-p com.example.app \
-  -k YOUR_API_KEY \
-  -q 'hook com.example.SecurityCheck.isEmulator() return false'"
+./gradlew run --args="-p <package_name> -k <api_key> -q '<query>'"
 ```
 
-**Output:**
-- Parses query instantly
-- Generates targeted script
-- Executes immediately
+### Additional Options
 
-#### ⚡ Semi-Specific Query (Fast - 3-5s)
+| Flag | Description |
+|------|-------------|
+| `-p` | Target application package name |
+| `-k` | Anthropic API key (or use `ANTHROPIC_API_KEY` env var) |
+| `-q` | Single query to execute |
+| `-i` | Interactive mode |
+| `-c` | Context level: `MINIMAL`, `BASIC` (default), `FULL` |
+| `-s` | Save generated script to file |
+| `-o` | Save collected context to JSON |
+| `--dry-run` | Generate script without executing |
 
-When you know some keywords:
-
-```bash
-./gradlew run --args="-p com.example.app \
-  -k YOUR_API_KEY \
-  -q 'bypass isEmulator method from SecurityCheck'"
-```
-
-**Output:**
-- Searches for matching classes
-- Collects methods on-demand
-- Generates contextual script
-
-#### 🔎 Generic Query (Thorough - 5-10s)
-
-When you only know what you want:
-
-```bash
-./gradlew run --args="-p com.example.app \
-  -k YOUR_API_KEY \
-  -q 'bypass emulator detection'"
-```
-
-**Output:**
-- Full context collection
-- Intelligent class prioritization
-- Comprehensive script generation
-
-### 3. Additional Options
-
-#### Save Generated Script
-
-```bash
-./gradlew run --args="-p com.example.app \
-  -k YOUR_API_KEY \
-  -q 'hook com.example.Class.method() return false' \
-  -s output.js"
-```
-
-#### Dry Run (Generate but don't execute)
-
-```bash
-./gradlew run --args="-p com.example.app \
-  -k YOUR_API_KEY \
-  -q 'bypass root check' \
-  --dry-run"
-```
-
-#### Save Context for Analysis
-
-```bash
-./gradlew run --args="-p com.example.app \
-  -c FULL \
-  -o context.json"
-```
-
-### 4. Interactive Mode
-
-```bash
-./gradlew run --args="-p com.example.app -k YOUR_API_KEY -i"
-```
-
-**Commands:**
-```
-frida-llm> hook com.example.SecurityCheck.isEmulator() return false
-frida-llm> bypass root detection
-frida-llm> stats
-frida-llm> classes
-frida-llm> frameworks
-frida-llm> help
-frida-llm> exit
-```
+---
 
 ## Examples
 
-### Single Hook - Emulator Detection Bypass
+### Bypass Emulator Detection
 
 ```bash
 # Specific
-./gradlew run --args="-p com.pentestmobile.appemulator \
-  -q 'hook com.pentestmobile.appemulator.SecurityCheck.isEmulator() return false'"
+./gradlew run --args="-p owasp.sat.agoat -q 'hook owasp.sat.agoat.EmulatorDetectionActivity.isEmulator() return false'"
 
 # Generic
-./gradlew run --args="-p com.pentestmobile.appemulator \
-  -q 'bypass emulator detection'"
+./gradlew run --args="-p owasp.sat.agoat -q 'bypass emulator detection'"
 ```
 
-### Multiple Hooks - Comprehensive Emulator Bypass 🆕
-
-When an app has multiple emulator detection checks:
+### Intercept Login Credentials
 
 ```bash
-./gradlew run --args="-p com.example.app \
-  -q 'hook com.example.SecurityCheck.isEmulator() return false AND hook com.example.DeviceValidator.detectEmulator() return false'"
+./gradlew run --args="-p com.android.insecurebankv2 -q 'intercept credentials from LoginActivity when user performs login'"
 ```
 
-**Separators supported:**
-- `AND` / `OR` (case insensitive)
-- Comma `,`
-- Semicolon `;`
-- New line
-
-**Examples:**
+### Bypass SSL Pinning
 
 ```bash
-# Using AND
--q 'hook Class1.method1() return false AND hook Class2.method2() return false'
-
-# Using comma
--q 'hook Class1.method1() return false, hook Class2.method2() return false'
-
-# Using semicolon
--q 'bypass Class1.check1(); bypass Class2.check2()'
-
-# Multi-line (in script)
--q 'hook Class1.method1() return false
-hook Class2.method2() return false
-hook Class3.method3() return false'
+./gradlew run --args="-p owasp.sat.agoat -q 'bypass SSL pinning'"
 ```
 
-### Multiple Hooks - Root Detection Bypass
+### Intercept Cryptographic Operations
 
 ```bash
-./gradlew run --args="-p com.example.bankapp \
-  -q 'hook com.example.security.RootChecker.isRooted() return false, hook com.example.security.RootDetector.checkRoot() return false, hook com.example.utils.SecurityUtils.hasRootAccess() return false'"
+./gradlew run --args="-p sg.vantagepoint.uncrackable1 -q 'intercept cryptographic operations and convert the result to legible text'"
 ```
 
-### SSL Pinning Bypass 🆕🔒
-
-**NEW: Complete automated SSL bypass setup!**
-
-#### Quick Start (Recommended)
-
-Run the complete end-to-end test:
+### Multiple Hooks
 
 ```bash
-chmod +x test_ssl_e2e.sh
-./test_ssl_e2e.sh com.example.app YOUR_API_KEY
+# Using AND separator
+./gradlew run --args="-p com.example.app -q 'hook Class1.method1() return false AND hook Class2.method2() return false'"
 ```
 
-This will automatically:
-1. ✅ Check prerequisites (adb, device, Burp)
-2. ✅ Download Burp CA certificate
-3. ✅ Convert to Android format
-4. ✅ Install on device (with guidance)
-5. ✅ Configure proxy
-6. ✅ Generate SSL bypass script
-7. ✅ Execute and test
-8. ✅ Cleanup
-
-#### Manual Steps
-
-**Step 1: Setup CA Certificate (One-time)**
-
-```bash
-# Start Burp Suite on port 8080 first
-./gradlew run --args="--setup-ca"
-```
-
-This will:
-- Download Burp's CA cert from http://burp/cert
-- Convert to Android format
-- Push to device
-- Guide you through installation
-
-**Step 2: Run SSL Bypass**
-
-```bash
-./gradlew run --args="-p com.example.app \
-  -k YOUR_API_KEY \
-  -q 'bypass ssl pinning'"
-```
-
-**Step 3: Test**
-
-1. Open the app
-2. Perform HTTPS requests
-3. Check Burp for decrypted traffic
-
-**Step 4: Cleanup**
-
-```bash
-./gradlew run --args="--cleanup"
-```
-
-#### Prerequisites
-
-**Before starting:**
-
-```bash
-# 1. Start Burp Suite
-#    Proxy → Options → Listener on 127.0.0.1:8080
-
-# 2. OR start mitmproxy
-mitmproxy -p 8080
-
-# 3. Device connected
-adb devices
-```
-
-**What happens automatically:**
-1. ✅ Proxy configuration (`adb shell settings put global http_proxy 127.0.0.1:8080`)
-2. ✅ Port forwarding (`adb reverse tcp:8080 tcp:8080`)
-3. ✅ CA certificate download and conversion
-4. ✅ Certificate installation guidance
-5. ✅ Connectivity testing
-6. ✅ SSL bypass script generation
-7. ✅ Script execution
-
-#### Troubleshooting
-
-### Method Logging
-
-```bash
-./gradlew run --args="-p com.example.app \
-  -q 'intercept com.example.api.LoginService.login log calls'"
-```
-
-## Context Levels
-
-### MINIMAL
-- Only class names
-- Fastest collection (~2s)
-- Use when you know what you're looking for
-
-```bash
--c MINIMAL
-```
-
-### BASIC (Default)
-- App classes + frameworks
-- Balanced speed/info (~5s)
-- Best for most cases
-
-```bash
--c BASIC
-```
-
-### FULL
-- All classes + methods + manifest
-- Slowest but most complete (~15s)
-- Use for thorough analysis
-
-```bash
--c FULL
-```
-
-## Research Usage
-
-### Collect Metrics
-
-```bash
-# Generate script without execution
-./gradlew run --args="-p TARGET_APP \
-  -q 'QUERY' \
-  --dry-run \
-  -s generated_script.js"
-
-# Manually validate and execute
-frida -U -f TARGET_APP -l generated_script.js --no-pause
-```
-
-### Compare Query Types
-
-```bash
-# Test specific query
-time ./gradlew run --args="-p APP -q 'hook com.example.Class.method() return false'"
-
-# Test generic query  
-time ./gradlew run --args="-p APP -q 'bypass check'"
-```
-
-### Save Full Context
-
-```bash
-./gradlew run --args="-p TARGET_APP -c FULL -o analysis/context.json"
-```
-
-## Troubleshooting
-
-### "Failed to connect"
-
-```bash
-# Check if app is installed
-adb shell pm list packages | grep YOUR_PACKAGE
-
-# Check if Frida server is running
-adb shell "ps | grep frida"
-
-# Check device connection
-frida-ps -Ua
-```
-
-### "No API key"
-
-```bash
-# Set environment variable
-export ANTHROPIC_API_KEY="sk-ant-..."
-
-# Or use -k flag
--k "sk-ant-..."
-```
-
-### "Script validation failed"
-
-The LLM-generated script has syntax errors. Use `--dry-run` to see the script and debug manually.
-
-### "Class not found"
-
-The app may not have loaded the class yet. Try:
-1. Interact with the app feature first
-2. Use spawn mode (app will be launched automatically)
-3. Check class name is correct with JADX
+---
 
 ## Project Structure
 
 ```
-src/main/kotlin/
-├── Main.kt                 # CLI entry point
-├── core/
-│   ├── FridaConnector.kt   # Frida communication
-│   ├── ContextCollector.kt # Smart context collection
-│   ├── QueryRouter.kt      # Query type detection
-│   ├── QueryParser.kt      # Specific query parsing
-│   └── ScriptExecutor.kt   # Script execution
-├── collectors/
-│   ├── AppInfoCollector.kt
-│   ├── ClassCollector.kt
-│   ├── FrameworkDetector.kt
-│   └── ManifestCollector.kt
-├── llm/
-│   ├── LLMClient.kt        # Claude API client
-│   └── PromptBuilder.kt    # Prompt engineering
-└── models/
-    ├── AppContext.kt       # Data models
-    └── ...
+fridaforge/
+├── README.md
+├── LICENSE
+├── build.gradle.kts
+├── settings.gradle.kts
+├── examples/                          # Example queries and outputs
+│   ├── queries/                       # Sample queries per app
+│   └── scripts/                       # Example generated scripts
+├── artifacts/                         # Experiment data and results
+│   ├── FridaForge_Resultados_N5.xlsx  # Full N=5 experiment results
+│   └── context_samples/               # Sample collected contexts
+├── demo/                              # Demonstration materials
+│   └── video_link.md                  # Link to demo video
+└── src/main/kotlin/
+    ├── Main.kt                        # CLI entry point
+    ├── core/
+    │   ├── FridaConnector.kt          # Frida communication
+    │   ├── ContextCollector.kt        # Dynamic context collection
+    │   ├── QueryRouter.kt             # Query type classification
+    │   ├── QueryParser.kt             # Specific query parsing
+    │   └── ScriptExecutor.kt          # Script validation & execution
+    ├── collectors/
+    │   ├── AppInfoCollector.kt        # App metadata
+    │   ├── ClassCollector.kt          # Class enumeration
+    │   ├── MethodCollector.kt         # Method enumeration
+    │   ├── FrameworkDetector.kt       # Library detection
+    │   ├── ManifestCollector.kt       # AndroidManifest parsing
+    │   ├── StorageCollector.kt        # DB & SharedPrefs detection
+    │   └── NativeLibraryCollector.kt  # Native module enumeration
+    ├── llm/
+    │   ├── LLMClient.kt              # Claude API client
+    │   └── PromptBuilder.kt          # Context-aware prompt construction
+    └── models/
+        ├── AppContext.kt              # Application context model
+        ├── ClassInfo.kt               # Class/method data
+        └── GeneratedScript.kt         # Script result model
 ```
+
+---
+
+## Reproducing Experiments
+
+The evaluation described in the paper can be reproduced as follows:
+
+### 1. Benchmark Applications
+
+| ID | Application | Source |
+|----|-------------|--------|
+| A1 | DIVA | [GitHub](https://github.com/payatu/diva-android) |
+| A2 | InsecureBankv2 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2) |
+| A3 | UnCrackable L1 | [OWASP MASTG](https://mas.owasp.org/crackmes/Android/) |
+| A4 | Damn Vulnerable Bank | [GitHub](https://github.com/AsesLabs/DamnVulnerableBank) |
+| A5 | AndroGoat | [GitHub](https://github.com/AseemShrey/AndroGoat) |
+
+### 2. Environment Setup
+
+```bash
+# Android emulator with API 36, root enabled
+adb root
+
+# Frida Server v17.4.1
+adb push frida-server-17.4.1-android-arm64 /data/local/tmp/frida-server
+adb shell "chmod 755 /data/local/tmp/frida-server"
+adb shell "/data/local/tmp/frida-server &"
+```
+
+### 3. Running Tests
+
+```bash
+# Install target app
+adb install <app.apk>
+
+# Run FridaForge
+./gradlew run --args="-p <package_name> -k $ANTHROPIC_API_KEY -i"
+
+# Reset between executions
+adb shell am force-stop <package_name>
+adb shell pm clear <package_name>
+```
+
+### 4. Experiment Results
+
+Full results (N=5, 175 executions) are available in `artifacts/FridaForge_Resultados_N5.xlsx`.
+
+---
+
+## Demo Video
+
+A demonstration video showing the installation, configuration, and usage of FridaForge is available at:
+
+**[Demo Video](https://drive.google.com/drive/folders/1adbSMc6c9pAS0T3duMDPOnGjah7tJcJK?usp=drive_link)**
+
+The video covers two scenarios:
+1. Bypass of emulator detection in AndroGoat
+2. Interception of cryptographic operations in UnCrackable L1
+
+---
 
 ## License
 
-MIT License - See LICENSE file
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-## Contributing
-
-This is a research project. Contributions welcome!
-
-## Citation
-
-If you use this tool in your research, please cite:
-
-```bibtex
-@misc{frida-llm-tool,
-  title={Frida-LLM: AI-Powered Mobile Instrumentation},
-  author={Francisco Sales},
-  year={2025},
-  url={https://github.com/FranciscoSalesCarvalho/android_instrumentation}
-}
-```
+---
