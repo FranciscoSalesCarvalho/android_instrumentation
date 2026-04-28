@@ -23,34 +23,7 @@ class PromptBuilder {
             Generate a Frida script in JavaScript to accomplish the following task:
             ${parsed.originalQuery}
                 
-            REQUIREMENTS:
-            1. Use Java.perform() wrapper
-            2. Hook the exact method specified
-            3. Include error handling (try-catch)
-            4. Add console.log statements to show when hook is triggered
-            5. Log method parameters when called
-            6. Implement the required action
-            7. Keep code clean and well-commented
-            8. When passing string literals to Android methods (Toast, TextView, Intent, etc.), always convert to Java String:
-               - CORRECT: Java.use("java.lang.String").${'$'}new("message")
-               - WRONG: "message" (JavaScript literal)
-            9. When replacing void method implementations:
-               - Do NOT call the original method (causes infinite recursion)
-               - Do NOT use return statement
-               - Simply implement the new behavior
-            10. When replacing non-void method implementations and you need to call the original:
-                - Use this.methodName.call(this, args) or store original reference before hooking
-            11. Avoid using Java.scheduleOnMainThread() unless strictly necessary:
-                - Methods called from UI events (button clicks, etc.) are already on main thread
-                - If needed, capture 'this' reference before the closure
-            12. When hooking Android framework interfaces, hook the concrete implementation class instead:
-                - SharedPreferences${'$'}Editor → android.app.SharedPreferencesImpl${'$'}EditorImpl
-                - ContentResolver → android.content.ContentResolver (concrete class)
-                - Abstract/interface methods cannot be hooked directly
-                - Common implementations:
-                  * SharedPreferences${'$'}Editor.putString() → android.app.SharedPreferencesImpl${'$'}EditorImpl.putString()
-                  * SharedPreferences${'$'}Editor.commit() → android.app.SharedPreferencesImpl${'$'}EditorImpl.commit()
-                  * SharedPreferences${'$'}Editor.apply() → android.app.SharedPreferencesImpl${'$'}EditorImpl.apply()
+            ${buildRequirements()}
             
             OUTPUT:
             Provide ONLY the JavaScript code, no explanations before or after.
@@ -79,16 +52,7 @@ class PromptBuilder {
                 TARGETS (${multiHook.hooks.size} hooks required):
                 $hooksDescription
                 
-                REQUIREMENTS:
-                1. Use a single Java.perform() wrapper for all hooks
-                2. Hook ALL ${multiHook.hooks.size} methods specified above
-                3. Include error handling (try-catch) for each hook
-                4. Add console.log statements to show when each hook is triggered
-                5. Log the class and method name for each hook
-                6. Implement the required action for each method
-                7. If any hook fails, continue with the others (don't crash the script)
-                8. Keep code clean and well-commented
-                9. Number each hook (// Hook 1, // Hook 2, etc.)
+                ${buildRequirements()}
                 
                 EXAMPLE STRUCTURE:
                 ```javascript
@@ -177,34 +141,8 @@ class PromptBuilder {
                 """ 
                 else ""
             }
-            REQUIREMENTS:
-            1. Use Java.perform() wrapper
-            2. Hook the most appropriate method(s) to achieve the goal
-            3. Include error handling
-            4. Add informative console.log statements
-            5. If multiple methods need to be hooked, hook all of them
-            6. Consider the frameworks detected when writing the script
-            7. Be specific - use the actual class and method names from the context
-            8. When passing string literals to Android methods (Toast, TextView, Intent, etc.), always convert to Java String:
-               - CORRECT: Java.use("java.lang.String").${'$'}new("message")
-               - WRONG: "message" (JavaScript literal)
-            9. When replacing void method implementations:
-               - Do NOT call the original method (causes infinite recursion)
-               - Do NOT use return statement
-               - Simply implement the new behavior
-            10. When replacing non-void method implementations and you need to call the original:
-                - Use this.methodName.call(this, args) or store original reference before hooking
-            11. Avoid using Java.scheduleOnMainThread() unless strictly necessary
-                - Methods called from UI events (button clicks, etc.) are already on main thread
-            12. When hooking Android framework interfaces, hook the concrete implementation class instead:
-                - SharedPreferences${'$'}Editor → android.app.SharedPreferencesImpl${'$'}EditorImpl
-                - ContentResolver → android.content.ContentResolver (concrete class)
-                - Abstract/interface methods cannot be hooked directly
-                - Common implementations:
-                  * SharedPreferences${'$'}Editor.putString() → android.app.SharedPreferencesImpl${'$'}EditorImpl.putString()
-                  * SharedPreferences${'$'}Editor.commit() → android.app.SharedPreferencesImpl${'$'}EditorImpl.commit()
-                  * SharedPreferences${'$'}Editor.apply() → android.app.SharedPreferencesImpl${'$'}EditorImpl.apply()
-
+            
+            ${buildRequirements()}
             
             OUTPUT:
             Provide ONLY the JavaScript code, no explanations.
@@ -284,34 +222,7 @@ class PromptBuilder {
             - Root detection: RootChecker, SecurityManager classes  
             - SSL Pinning: OkHttpClient, CertificatePinner, custom network classes
             
-            REQUIREMENTS:
-            1. Use Java.perform() wrapper
-            2. Hook appropriate methods to achieve the goal
-            3. Include error handling for class/method not found
-            4. Add console.log statements
-            5. Try multiple common patterns if needed
-            6. Comment the code explaining what each hook does
-            8. When passing string literals to Android methods (Toast, TextView, Intent, etc.), always convert to Java String:
-               - CORRECT: Java.use("java.lang.String").${'$'}new("message")
-               - WRONG: "message" (JavaScript literal)
-            9. When replacing void method implementations:
-               - Do NOT call the original method (causes infinite recursion)
-               - Do NOT use return statement
-               - Simply implement the new behavior
-            10. When replacing non-void method implementations and you need to call the original:
-                - Use this.methodName.call(this, args) or store original reference before hooking
-            11. Avoid using Java.scheduleOnMainThread() unless strictly necessary
-                - Methods called from UI events (button clicks, etc.) are already on main thread
-            12. When hooking Android framework interfaces, hook the concrete implementation class instead:
-                - SharedPreferences${'$'}Editor → android.app.SharedPreferencesImpl${'$'}EditorImpl
-                - ContentResolver → android.content.ContentResolver (concrete class)
-                - Abstract/interface methods cannot be hooked directly
-                - Common implementations:
-                  * SharedPreferences${'$'}Editor.putString() → android.app.SharedPreferencesImpl${'$'}EditorImpl.putString()
-                  * SharedPreferences${'$'}Editor.commit() → android.app.SharedPreferencesImpl${'$'}EditorImpl.commit()
-                  * SharedPreferences${'$'}Editor.apply() → android.app.SharedPreferencesImpl${'$'}EditorImpl.apply()
-            13. Avoid overload any method from java api. Is too easy to make the application crash when done.
-            14. When asked to bypass password replace true stick to boolean methods
+            ${buildRequirements()}
             
             OUTPUT:
             Provide ONLY the JavaScript code, no explanations.
@@ -415,5 +326,66 @@ class PromptBuilder {
             bytes < 1024 * 1024 -> "${bytes / 1024}KB"
             else -> "${"%.1f".format(bytes.toDouble() / (1024 * 1024))}MB"
         }
+    }
+
+    private fun buildRequirements(): String {
+        return """
+            REQUIREMENTS:
+            1. Use Java.perform() wrapper
+            2. Hook the most appropriate method(s) to achieve the goal
+            3. Include error handling (try-catch)
+            4. Add informative console.log statements
+            5. If multiple methods need to be hooked, hook all of them
+            6. Keep code clean and well-commented
+            7. When passing string literals to Android methods (Toast, TextView, Intent, etc.), always convert to Java String:
+               - CORRECT: Java.use("java.lang.String").${'$'}new("message")
+               - WRONG: "message" (JavaScript literal)
+            8. When replacing void method implementations:
+               - Do NOT call the original method (causes infinite recursion)
+               - Do NOT use return statement
+               - Simply implement the new behavior
+            9. When replacing non-void method implementations and you need to call the original:
+                - Use this.methodName.call(this, args) or store original reference before hooking
+            10. Avoid using Java.scheduleOnMainThread() unless strictly necessary:
+                - Methods called from UI events (button clicks, etc.) are already on main thread
+                - If needed, capture 'this' reference before the closure
+            11. When hooking Android framework interfaces, hook the concrete implementation class instead:
+                - SharedPreferences${'$'}Editor → android.app.SharedPreferencesImpl${'$'}EditorImpl
+                - ContentResolver → android.content.ContentResolver (concrete class)
+                - Abstract/interface methods cannot be hooked directly
+                - Common implementations:
+                  * SharedPreferences${'$'}Editor.putString() → android.app.SharedPreferencesImpl${'$'}EditorImpl.putString()
+                  * SharedPreferences${'$'}Editor.commit() → android.app.SharedPreferencesImpl${'$'}EditorImpl.commit()
+                  * SharedPreferences${'$'}Editor.apply() → android.app.SharedPreferencesImpl${'$'}EditorImpl.apply()
+            12. Avoid overload any method from java api. Is too easy to make the application crash when done.
+            13. When asked to bypass password replace true stick to boolean methods.
+            14. NEVER hook high-volume runtime methods globally. These are called thousands
+                of times per second and will flood the output, making observation impossible:
+                - String.hashCode(), String.getBytes(), String.equals()
+                - Object.toString(), Object.hashCode()
+                - Arrays.toString(), Arrays.equals()
+                - If you need to observe these, hook them only on specific instances or
+                  within a specific call path, never on the base class.
+            15. NEVER hook methods within another hook's implementation body. When you
+                hook getInstance() and inside its body you redefine update() and digest(),
+                those redefinitions can stack across calls and cause infinite recursion.
+                If you need to observe a returned instance, hook the class methods once
+                at script load time (outside any other hook).
+            16. NEVER use Java.enumerateLoadedClasses with Java.use() calls on matched
+                classes. Enumerating and instantiating hundreds of wrappers at runtime
+                freezes the app. If you need to discover classes, use static analysis
+                ahead of time and hardcode the targets in the script.
+            17. NEVER inspect Thread.currentThread().getStackTrace() inside a hook that
+                fires on a high-volume method. Stack trace inspection is expensive and
+                multiplies the impact of an already-frequent hook.
+            18. Prefer narrow, targeted hooks over broad coverage. When given a choice
+                between:
+                (a) hooking one specific method that is known to be called by the target
+                (b) hooking every class that might possibly be relevant
+                always prefer (a). Broad coverage generates noise that masks the signal.
+            19. When hooking Context methods like sendBroadcast, registerReceiver, or startActivity, 
+                hook the concrete implementation class (ContextImpl or ContextWrapper) instead of the 
+                abstract Context class, as hooks on abstract classes may not intercept actual calls.
+        """.trimIndent()
     }
 }

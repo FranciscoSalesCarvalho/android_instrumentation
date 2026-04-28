@@ -1,11 +1,15 @@
 # FridaForge
 
-**Geração Automatizada de Scripts de Instrumentação Dinâmica para Análise de Segurança Android utilizando LLMs e Contexto Dinâmico da Aplicação**
+**Geração Automatizada de Scripts de Instrumentação Dinâmica para Análise de Segurança Android utilizando LLMs e
+Contexto Dinâmico da Aplicação**
 
-O FridaForge automatiza a geração de scripts Frida a partir de consultas em linguagem natural. A ferramenta coleta o contexto da aplicação Android em execução (classes carregadas, métodos, bibliotecas, módulos nativos, armazenamento) e o utiliza para guiar um LLM na produção de scripts funcionais e específicos para cada aplicação.
+O FridaForge automatiza a geração de scripts Frida a partir de consultas em linguagem natural. A ferramenta coleta o
+contexto da aplicação Android em execução (classes carregadas, métodos, bibliotecas, módulos nativos, armazenamento) e o
+utiliza para guiar um LLM na produção de scripts funcionais e específicos para cada aplicação.
 
-> **Artigo:** *FridaForge: Geração Automatizada de Scripts de Instrumentação Dinâmica Assistida por Modelos de Linguagem com Contexto da Aplicação*  
-> **Evento:** Salão de Ferramentas — SBSeg 2026
+> **Artigo:** *FridaForge: Geração Automatizada de Scripts de Instrumentação Dinâmica Assistida por Modelos de Linguagem
+com Contexto da Aplicação*  
+> **Evento:** SBSeg
 
 🌐 [English version](README.md)
 
@@ -29,20 +33,25 @@ O FridaForge automatiza a geração de scripts Frida a partir de consultas em li
 
 ## Visão Geral
 
-A instrumentação dinâmica com Frida é essencial para análise de segurança Android, porém a escrita de scripts eficazes exige expertise na API do Frida e conhecimento da estrutura interna da aplicação-alvo. O FridaForge aborda esse problema por meio de quatro etapas:
+A instrumentação dinâmica com Frida é essencial para análise de segurança Android, porém a escrita de scripts eficazes
+exige expertise na API do Frida e conhecimento da estrutura interna da aplicação-alvo. O FridaForge aborda esse problema
+por meio de quatro etapas:
 
-1. **Coleta de contexto em tempo de execução** — classes, métodos, bibliotecas, módulos nativos, bancos de dados e SharedPreferences da aplicação
-2. **Construção de prompts com contexto** — estruturação das informações coletadas junto à consulta em linguagem natural do analista
-3. **Geração de scripts executáveis** — uso de um LLM para produzir scripts Frida em JavaScript que referenciam elementos reais da aplicação
+1. **Coleta de contexto em tempo de execução** — classes, métodos, bibliotecas, módulos nativos, bancos de dados e
+   SharedPreferences da aplicação
+2. **Construção de prompts com contexto** — estruturação das informações coletadas junto à consulta em linguagem natural
+   do analista
+3. **Geração de scripts executáveis** — uso de um LLM para produzir scripts Frida em JavaScript que referenciam
+   elementos reais da aplicação
 4. **Validação e execução** — extração, validação sintática e injeção automática do script na aplicação-alvo
 
 As consultas podem ser formuladas em três níveis de especificidade:
 
-| Nível | Descrição | Exemplo |
-|-------|-----------|---------|
-| **Específica** | Caminho completo da classe e método | `hook com.app.SecurityCheck.isEmulator() return false` |
-| **Semi-específica** | Nome da classe ou método sem caminho completo | `bypass isEmulator from SecurityCheck` |
-| **Genérica** | Intenção em alto nível | `bypass emulator detection` |
+| Nível               | Descrição                                     | Exemplo                                                |
+|---------------------|-----------------------------------------------|--------------------------------------------------------|
+| **Específica**      | Caminho completo da classe e método           | `hook com.app.SecurityCheck.isEmulator() return false` |
+| **Semi-específica** | Nome da classe ou método sem caminho completo | `bypass isEmulator from SecurityCheck`                 |
+| **Genérica**        | Intenção em alto nível                        | `bypass emulator detection`                            |
 
 ---
 
@@ -127,14 +136,14 @@ frida-llm> bypass emulator detection
 
 Comandos disponíveis no modo interativo:
 
-| Comando | Descrição |
-|---------|-----------|
-| `<qualquer consulta>` | Gerar e executar um script Frida |
-| `classes` | Listar classes coletadas da aplicação |
-| `frameworks` | Mostrar bibliotecas detectadas |
-| `stats` | Exibir estatísticas da coleta de contexto |
-| `help` | Mostrar comandos disponíveis |
-| `exit` | Sair do modo interativo |
+| Comando               | Descrição                                 |
+|-----------------------|-------------------------------------------|
+| `<qualquer consulta>` | Gerar e executar um script Frida          |
+| `classes`             | Listar classes coletadas da aplicação     |
+| `frameworks`          | Mostrar bibliotecas detectadas            |
+| `stats`               | Exibir estatísticas da coleta de contexto |
+| `help`                | Mostrar comandos disponíveis              |
+| `exit`                | Sair do modo interativo                   |
 
 ### Modo de Consulta Única
 
@@ -144,16 +153,17 @@ Comandos disponíveis no modo interativo:
 
 ### Opções Adicionais
 
-| Flag | Descrição |
-|------|-----------|
-| `-p` | Nome do pacote da aplicação-alvo |
-| `-k` | Chave de API da Anthropic (ou variável `ANTHROPIC_API_KEY`) |
-| `-q` | Consulta única para execução |
-| `-i` | Modo interativo |
-| `-c` | Nível de contexto: `MINIMAL`, `BASIC` (padrão), `FULL` |
-| `-s` | Salvar script gerado em arquivo |
-| `-o` | Salvar contexto coletado em JSON |
-| `--dry-run` | Gerar script sem executar |
+| Flag           | Descrição                                                          |
+|----------------|--------------------------------------------------------------------|
+| `-p`           | Nome do pacote da aplicação-alvo                                   |
+| `-k`           | Chave de API da Anthropic (ou variável `ANTHROPIC_API_KEY`)        |
+| `-q`           | Consulta única para execução                                       |
+| `-i`           | Modo interativo                                                    |
+| `-c`           | Nível de contexto: `MINIMAL`, `BASIC` (padrão), `FULL`             |
+| `-s`           | Salvar script gerado em arquivo                                    |
+| `-o`           | Salvar contexto coletado em JSON                                   |
+| `--dry-run`    | Gerar script sem executar                                          |
+| `--stacktrace` | Caminho para arquivo de stack trace para contexto adicional ao LLM |
 
 ---
 
@@ -178,8 +188,14 @@ Comandos disponíveis no modo interativo:
 ### Bypass de SSL Pinning
 
 ```bash
+# Genérico
 ./gradlew run --args="-p owasp.sat.agoat -q 'bypass SSL pinning'"
+
+# Com stack trace (maior taxa de sucesso)
+./gradlew run --args="-p owasp.sat.agoat -q 'bypass SSL pinning' -e /path/to/stacktrace.txt"
 ```
+
+> **Dica:** Quando um bypass de SSL pinning falha, capture o stack trace do `logcat` e forneça-o via `-e`/`--stacktrace`. O LLM utiliza essa informação para identificar a classe e o método exatos que realizam a validação do certificado, gerando scripts mais precisos.
 
 ### Interceptar Operações Criptográficas
 
@@ -246,13 +262,19 @@ A avaliação descrita no artigo pode ser reproduzida conforme os passos abaixo.
 
 ### 1. Aplicações Benchmark
 
-| ID | Aplicação | Código-fonte |
-|----|-----------|--------------|
-| A1 | DIVA | [GitHub](https://github.com/payatu/diva-android) |
-| A2 | InsecureBankv2 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2) |
-| A3 | UnCrackable L1 | [OWASP MASTG](https://mas.owasp.org/crackmes/Android/) |
-| A4 | Damn Vulnerable Bank | [GitHub](https://github.com/AsesLabs/DamnVulnerableBank) |
-| A5 | AndroGoat | [GitHub](https://github.com/AseemShrey/AndroGoat) |
+| ID  | Application          | MASTG ID       | Source                                                                            |
+|-----|----------------------|----------------|-----------------------------------------------------------------------------------|
+| A1  | AndroGoat            | MASTG-APP-0001 | [GitHub](https://github.com/satishpatnayak/AndroGoat)                             |
+| A2  | UnCrackable L1       | MASTG-APP-0003 | [OWASP MASTG](https://mas.owasp.org/crackmes/Android/)                            |
+| A3  | DIVA                 | MASTG-APP-0007 | [GitHub](https://github.com/payatu/diva-android)                                  |
+| A4  | DodoVulnerableBank   | MASTG-APP-0008 | [GitHub](https://github.com/nickmyb/DodoVulnerableBank)                           |
+| A5  | InsecureBankv2       | MASTG-APP-0010 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2)                  |
+| A6  | OVAA                 | MASTG-APP-0013 | [GitHub](https://github.com/AseemTechnologies/Oversecured-Vulnerable-Android-App) |
+| A7  | Finstergram          | MASTG-APP-0016 | [GitHub](https://github.com/nickmyb/Finstergram)                                  |
+| A8  | MASTestApp-NETWORK   | MASTG-APP-0018 | [OWASP MASTG](https://github.com/nickmyb/MASTestApp)                              |
+| A9  | BugBazaar            | MASTG-APP-0029 | [GitHub](https://github.com/nickmyb/BugBazaar)                                    |
+| A10 | VulnForum            | MASTG-APP-0031 | [GitHub](https://github.com/nickmyb/VulnForum)                                    |
+| A11 | Damn Vulnerable Bank | —              | [GitHub](https://github.com/rewanthtammana/Damn-Vulnerable-Bank)                  |
 
 ### 2. Configuração do Ambiente
 
@@ -293,6 +315,7 @@ Um vídeo demonstrativo com a instalação, configuração e uso do FridaForge e
 **[Vídeo de Demonstração](https://drive.google.com/drive/folders/1adbSMc6c9pAS0T3duMDPOnGjah7tJcJK?usp=drive_link)**
 
 O vídeo cobre dois cenários:
+
 1. Bypass de detecção de emulador na aplicação AndroGoat
 2. Interceptação de operações criptográficas na aplicação UnCrackable L1
 
