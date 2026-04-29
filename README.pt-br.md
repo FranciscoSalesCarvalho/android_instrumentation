@@ -195,7 +195,9 @@ Comandos disponíveis no modo interativo:
 ./gradlew run --args="-p owasp.sat.agoat -q 'bypass SSL pinning' -e /path/to/stacktrace.txt"
 ```
 
-> **Dica:** Quando um bypass de SSL pinning falha, capture o stack trace do `logcat` e forneça-o via `-e`/`--stacktrace`. O LLM utiliza essa informação para identificar a classe e o método exatos que realizam a validação do certificado, gerando scripts mais precisos.
+> **Dica:** Quando um bypass de SSL pinning falha, capture o stack trace do `logcat` e forneça-o via `-e`/
+`--stacktrace`. O LLM utiliza essa informação para identificar a classe e o método exatos que realizam a validação do
+> certificado, gerando scripts mais precisos.
 
 ### Interceptar Operações Criptográficas
 
@@ -262,19 +264,19 @@ A avaliação descrita no artigo pode ser reproduzida conforme os passos abaixo.
 
 ### 1. Aplicações Benchmark
 
-| ID  | Application          | MASTG ID       | Source                                                                            |
-|-----|----------------------|----------------|-----------------------------------------------------------------------------------|
-| A1  | AndroGoat            | MASTG-APP-0001 | [GitHub](https://github.com/satishpatnayak/AndroGoat)                             |
-| A2  | UnCrackable L1       | MASTG-APP-0003 | [OWASP MASTG](https://mas.owasp.org/crackmes/Android/)                            |
-| A3  | DIVA                 | MASTG-APP-0007 | [GitHub](https://github.com/payatu/diva-android)                                  |
-| A4  | DodoVulnerableBank   | MASTG-APP-0008 | [GitHub](https://github.com/nickmyb/DodoVulnerableBank)                           |
-| A5  | InsecureBankv2       | MASTG-APP-0010 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2)                  |
-| A6  | OVAA                 | MASTG-APP-0013 | [GitHub](https://github.com/AseemTechnologies/Oversecured-Vulnerable-Android-App) |
-| A7  | Finstergram          | MASTG-APP-0016 | [GitHub](https://github.com/nickmyb/Finstergram)                                  |
-| A8  | MASTestApp-NETWORK   | MASTG-APP-0018 | [OWASP MASTG](https://github.com/nickmyb/MASTestApp)                              |
-| A9  | BugBazaar            | MASTG-APP-0029 | [GitHub](https://github.com/nickmyb/BugBazaar)                                    |
-| A10 | VulnForum            | MASTG-APP-0031 | [GitHub](https://github.com/nickmyb/VulnForum)                                    |
-| A11 | Damn Vulnerable Bank | —              | [GitHub](https://github.com/rewanthtammana/Damn-Vulnerable-Bank)                  |
+| ID  | Application          | MASTG ID       | Source                                                           |
+|-----|----------------------|----------------|------------------------------------------------------------------|
+| A1  | AndroGoat            | MASTG-APP-0001 | [GitHub](https://github.com/satishpatnayak/AndroGoat)            |
+| A2  | UnCrackable L1       | MASTG-APP-0003 | [OWASP MASTG](https://mas.owasp.org/crackmes/Android/)           |
+| A3  | DIVA                 | MASTG-APP-0007 | [GitHub](https://github.com/payatu/diva-android)                 |
+| A4  | DodoVulnerableBank   | MASTG-APP-0008 | [GitHub](https://github.com/CSPF-Founder/DodoVulnerableBank)     |
+| A5  | InsecureBankv2       | MASTG-APP-0010 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2) |
+| A6  | OVAA                 | MASTG-APP-0013 | [GitHub](https://github.com/oversecured/ovaa)                    |
+| A7  | Finstergram          | MASTG-APP-0016 | [GitHub](https://github.com/netlight/finstergram)                |
+| A8  | MASTestApp-NETWORK   | MASTG-APP-0018 | [OWASP MASTG](https://github.com/sydseter/MASTestApp-Android-NETWORK)             |
+| A9  | BugBazaar            | MASTG-APP-0029 | [GitHub](https://github.com/payatu/BugBazaar)                   |
+| A10 | VulnForum            | MASTG-APP-0031 | [GitHub](https://github.com/macik09/Vulnforum)                   |
+| A11 | Damn Vulnerable Bank | —              | [GitHub](https://github.com/rewanthtammana/Damn-Vulnerable-Bank) |
 
 ### 2. Configuração do Ambiente
 

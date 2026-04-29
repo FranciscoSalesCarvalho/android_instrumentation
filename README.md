@@ -193,7 +193,9 @@ Commands available in interactive mode:
 ./gradlew run --args="-p owasp.sat.agoat -q 'bypass SSL pinning' -e /path/to/stacktrace.txt"
 ```
 
-> **Tip:** When an SSL pinning bypass fails, capture the stack trace from `logcat` and pass it via `-e`/`--stacktrace`. The LLM uses it to identify the exact class and method enforcing certificate validation, producing more targeted scripts.
+> **Tip:** When an SSL pinning bypass fails, capture the stack trace from `logcat` and pass it via `-e`/`--stacktrace`.
+> The LLM uses it to identify the exact class and method enforcing certificate validation, producing more targeted
+> scripts.
 
 ### Intercept Cryptographic Operations
 
@@ -259,19 +261,19 @@ The evaluation described in the paper can be reproduced as follows:
 
 ### 1. Benchmark Applications
 
-| ID  | Application          | MASTG ID       | Source                                                                            |
-|-----|----------------------|----------------|-----------------------------------------------------------------------------------|
-| A1  | AndroGoat            | MASTG-APP-0001 | [GitHub](https://github.com/satishpatnayak/AndroGoat)                             |
-| A2  | UnCrackable L1       | MASTG-APP-0003 | [OWASP MASTG](https://mas.owasp.org/crackmes/Android/)                            |
-| A3  | DIVA                 | MASTG-APP-0007 | [GitHub](https://github.com/payatu/diva-android)                                  |
-| A4  | DodoVulnerableBank   | MASTG-APP-0008 | [GitHub](https://github.com/nickmyb/DodoVulnerableBank)                           |
-| A5  | InsecureBankv2       | MASTG-APP-0010 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2)                  |
-| A6  | OVAA                 | MASTG-APP-0013 | [GitHub](https://github.com/AseemTechnologies/Oversecured-Vulnerable-Android-App) |
-| A7  | Finstergram          | MASTG-APP-0016 | [GitHub](https://github.com/nickmyb/Finstergram)                                  |
-| A8  | MASTestApp-NETWORK   | MASTG-APP-0018 | [OWASP MASTG](https://github.com/nickmyb/MASTestApp)                              |
-| A9  | BugBazaar            | MASTG-APP-0029 | [GitHub](https://github.com/nickmyb/BugBazaar)                                    |
-| A10 | VulnForum            | MASTG-APP-0031 | [GitHub](https://github.com/nickmyb/VulnForum)                                    |
-| A11 | Damn Vulnerable Bank | —              | [GitHub](https://github.com/rewanthtammana/Damn-Vulnerable-Bank)                  |
+| ID  | Application          | MASTG ID       | Source                                                           |
+|-----|----------------------|----------------|------------------------------------------------------------------|
+| A1  | AndroGoat            | MASTG-APP-0001 | [GitHub](https://github.com/satishpatnayak/AndroGoat)            |
+| A2  | UnCrackable L1       | MASTG-APP-0003 | [OWASP MASTG](https://mas.owasp.org/crackmes/Android/)           |
+| A3  | DIVA                 | MASTG-APP-0007 | [GitHub](https://github.com/payatu/diva-android)                 |
+| A4  | DodoVulnerableBank   | MASTG-APP-0008 | [GitHub](https://github.com/CSPF-Founder/DodoVulnerableBank)     |
+| A5  | InsecureBankv2       | MASTG-APP-0010 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2) |
+| A6  | OVAA                 | MASTG-APP-0013 | [GitHub](https://github.com/oversecured/ovaa)                    |
+| A7  | Finstergram          | MASTG-APP-0016 | [GitHub](https://github.com/netlight/finstergram)                |
+| A8  | MASTestApp-NETWORK   | MASTG-APP-0018 | [OWASP MASTG](https://github.com/sydseter/MASTestApp-Android-NETWORK)             |
+| A9  | BugBazaar            | MASTG-APP-0029 | [GitHub](https://github.com/payatu/BugBazaar)                   |
+| A10 | VulnForum            | MASTG-APP-0031 | [GitHub](https://github.com/macik09/Vulnforum)                   |
+| A11 | Damn Vulnerable Bank | —              | [GitHub](https://github.com/rewanthtammana/Damn-Vulnerable-Bank) |
 
 ### 2. Environment Setup
 
