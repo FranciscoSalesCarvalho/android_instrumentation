@@ -155,6 +155,7 @@ class PromptBuilder {
     fun buildGenericPrompt(
         query: String,
         context: AppContext,
+        stacktrace: String? = null,
         needsMultipleHooks: Boolean = false
     ): String {
         val appClasses = context.classes
@@ -183,6 +184,7 @@ class PromptBuilder {
         }
 
         val nativeSection = buildNativeSection(context.nativeContext)
+        val stacktraceSection = buildStacktraceSection(stacktrace)
 
         return """
             You are an expert in Frida dynamic instrumentation for Android.
@@ -221,6 +223,8 @@ class PromptBuilder {
             - Emulator detection: often in Application class, SecurityCheck, DeviceValidator classes
             - Root detection: RootChecker, SecurityManager classes  
             - SSL Pinning: OkHttpClient, CertificatePinner, custom network classes
+            
+            $stacktraceSection
             
             ${buildRequirements()}
             
@@ -328,8 +332,23 @@ class PromptBuilder {
         }
     }
 
-    private fun buildRequirements(): String {
+    private fun buildStacktraceSection(stacktrace: String?): String {
+        if (stacktrace.isNullOrBlank()) return ""
+
         return """
+            
+            STACK TRACE (captured from app execution):
+            $stacktrace
+            
+            Use this stack trace to identify the exact call chain and target the most
+            appropriate methods for hooking. The stack trace reveals the actual execution
+            flow of the application.
+        """.trimIndent()
+    }
+
+    companion object {
+        fun buildRequirements(): String {
+            return """
             REQUIREMENTS:
             1. Use Java.perform() wrapper
             2. Hook the most appropriate method(s) to achieve the goal
@@ -387,5 +406,6 @@ class PromptBuilder {
                 hook the concrete implementation class (ContextImpl or ContextWrapper) instead of the 
                 abstract Context class, as hooks on abstract classes may not intercept actual calls.
         """.trimIndent()
+        }
     }
 }

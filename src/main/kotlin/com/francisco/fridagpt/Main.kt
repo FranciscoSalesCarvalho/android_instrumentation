@@ -5,10 +5,11 @@ package com.francisco.fridagpt
 import com.francisco.fridagpt.collectors.LogAnalyzer
 import com.francisco.fridagpt.collectors.StorageCollector
 import com.francisco.fridagpt.core.*
-import com.francisco.fridagpt.core.SSLBypassOrchestrator.PhaseResult
 import com.francisco.fridagpt.llm.LLMClient
 import com.francisco.fridagpt.llm.PromptBuilder
+import com.francisco.fridagpt.models.ExecutionRecord
 import com.francisco.fridagpt.models.MethodInfo
+import com.francisco.fridagpt.utils.LogcatCapture
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -60,11 +61,6 @@ class FridaLLMTool : CliktCommand() {
     private val dryRun by option(
         "--dry-run",
         help = "Generate script but don't execute"
-    ).flag(default = false)
-
-    private val setupCertificates by option(
-        "--certificates",
-        help = "Setup user and system certificates"
     ).flag(default = false)
 
     private val saveScript by option(
@@ -123,9 +119,22 @@ class FridaLLMTool : CliktCommand() {
             val router = QueryRouter()
             val parser = QueryParser()
             val promptBuilder = PromptBuilder()
-            val executor = ScriptExecutor(connector)
+            val logcat = LogcatCapture(packageName, device)
+            val executor = ScriptExecutor(
+                connector = connector,
+                logcatCapture = logcat,
+            )
             val llmClient = if (key != null) LLMClient(key) else null
             val collector = ContextCollector(connector)
+
+            // Inicializar RetryManager
+            val retryManager = if (llmClient != null) {
+                RetryManager(
+                    llmClient = llmClient,
+                    scriptExecutor = executor,
+                    logcatCapture = logcat
+                )
+            } else null
 
             if (analyzeLogs) {
                 logger.info { "Starting log analysis..." }
@@ -133,6 +142,11 @@ class FridaLLMTool : CliktCommand() {
                 val result = analyzer.analyzeLogs(logDuration)
                 println(analyzer.generateReport(result))
                 return@runBlocking
+            }
+
+            // Ler stacktrace se fornecido
+            val stacktraceContent = stacktrace?.let { path ->
+                File(path).runCatching { readText() }.getOrNull()
             }
 
             // Se há query direta, processar e sair
@@ -146,7 +160,10 @@ class FridaLLMTool : CliktCommand() {
                     parser = parser,
                     promptBuilder = promptBuilder,
                     llmClient = llmClient,
-                    executor = executor
+                    executor = executor,
+                    retryManager = retryManager,
+                    logcatCapture = logcat,
+                    stacktraceContent = stacktraceContent
                 )
                 return@runBlocking
             }
@@ -164,7 +181,9 @@ class FridaLLMTool : CliktCommand() {
                     collector = collector,
                     promptBuilder = promptBuilder,
                     llmClient = llmClient,
-                    executor = executor
+                    executor = executor,
+                    retryManager = retryManager,
+                    logcatCapture = logcat
                 )
             }
         } finally {
@@ -180,7 +199,10 @@ class FridaLLMTool : CliktCommand() {
         parser: QueryParser,
         promptBuilder: PromptBuilder,
         llmClient: LLMClient?,
-        executor: ScriptExecutor
+        executor: ScriptExecutor,
+        retryManager: RetryManager?,
+        logcatCapture: LogcatCapture,
+        stacktraceContent: String? = null
     ) {
         println("\n🔍 Analyzing query...")
 
@@ -218,133 +240,16 @@ class FridaLLMTool : CliktCommand() {
             QueryRouter.QueryType.GENERIC -> {
                 println("\n🔎 Generic query - Full context collection")
 
-                // Detectar se é SSL Pinning bypass
-                val isSSLBypass = query.lowercase().let { q ->
-                    q.contains("ssl") || q.contains("pinning") ||
-                            q.contains("certificate") || q.contains("certificatepinner")
-                }
-
-                // Se for SSL bypass, usar o orquestrador especializado
-                if (isSSLBypass) {
-                    handleSSLBypass(connector, llmClient, executor)
-                    return
-                }
-
                 handleGenericQuery(
                     query = query,
                     collector = collector,
                     promptBuilder = promptBuilder,
                     llmClient = llmClient,
-                    executor = executor
+                    executor = executor,
+                    retryManager = retryManager,
+                    logcatCapture = logcatCapture,
+                    stacktraceContent = stacktraceContent
                 )
-            }
-        }
-    }
-
-    /**
-     * Fluxo especializado para SSL Pinning Bypass
-     */
-    private suspend fun handleSSLBypass(
-        connector: FridaConnector,
-        llmClient: LLMClient?,
-        executor: ScriptExecutor
-    ) {
-        println("\n🔒 SSL Pinning Bypass Mode - Using specialized workflow")
-        println()
-
-        if (setupCertificates) {
-            println("\n" + "═".repeat(70))
-            println("User & System CA Certificate Setup")
-            println("═".repeat(70))
-            val certificates = setupCACertificates()
-
-            if (!certificates.success) {
-                println("❌ Setup certificates failed: ${certificates.message}")
-                return
-            } else {
-                println("✅ Setup certificates completed successfully")
-            }
-
-            println("\n" + "═".repeat(70))
-            println("Proxy Configuration")
-            println("═".repeat(70))
-            val proxy = setupProxy()
-
-            if (!proxy.success) {
-                println("❌ Proxy configuration failed: ${proxy.message}")
-                return
-            } else {
-                println("✅ Setup proxy completed successfully")
-            }
-        }
-
-        val orchestrator = SSLBypassOrchestrator(
-            connector = connector,
-            llmClient = llmClient,
-            dryRun = dryRun
-        )
-        val content = File(stacktrace.orEmpty()).runCatching {
-            readText()
-        }.getOrDefault("")
-        val result = orchestrator.execute(saveScript, content)
-
-        // Se tudo OK e não é dry-run, executar
-        if (result.allPhasesComplete && !dryRun && result.generatedScript != null) {
-            println()
-            print("🚀 Ready to execute SSL bypass script. Proceed? (Y/n): ")
-            val proceed = readLine()?.trim()?.lowercase()
-
-            if (proceed != "n" && proceed != "no") {
-                println("\n🚀 Executing script...")
-                val execResult = executor.execute(result.generatedScript!!, durationSeconds = 20)
-                println(executor.formatOutput(execResult))
-
-                if (execResult.success) {
-                    println(
-                        """
-                    
-                    ╔════════════════════════════════════════════════════════╗
-                    ║         SSL Bypass Active - Testing Instructions       ║
-                    ╚════════════════════════════════════════════════════════╝
-                    
-                    ✅ Frida script is running
-                    ✅ Proxy is configured
-                    ✅ CA certificate installed
-                    
-                    📱 Next Steps:
-                    1. Open the target app on your device
-                    2. Login or perform actions that use HTTPS
-                    3. Check Burp/mitmproxy for decrypted traffic
-                    
-                    ✅ Success indicators:
-                       • HTTPS requests visible in proxy
-                       • Traffic is decrypted (readable JSON/XML)
-                       • App works normally
-                    
-                    ❌ Failure indicators:
-                       • No traffic in proxy
-                       • SSL/certificate errors in app
-                       • App crashes
-                    
-                    Press Ctrl+C to stop when done testing
-                    
-                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                    
-                    """.trimIndent()
-                    )
-                }
-            }
-        }
-
-        // Cleanup prompt
-        if (!dryRun) {
-            println()
-            print("Remove proxy configuration? (y/N): ")
-            val cleanup = readLine()?.trim()?.lowercase()
-            if (cleanup == "y" || cleanup == "yes") {
-                val proxyManager = ProxyManager(device)
-                proxyManager.cleanup()
-                println("✅ Proxy configuration removed")
             }
         }
     }
@@ -445,65 +350,6 @@ class FridaLLMTool : CliktCommand() {
         }
     }
 
-    private suspend fun setupCACertificates(): PhaseResult {
-        return try {
-            println("📜 Setting up User CA certificate...")
-            println()
-
-            val caInstaller = CAInstaller(device)
-            val caResult = caInstaller.setupBurpCertificate()
-
-            if (caResult.isComplete) {
-                PhaseResult(
-                    success = true,
-                    message = "User CA certificate installed",
-                    data = caResult
-                )
-            } else {
-                PhaseResult(
-                    success = false,
-                    message = "User CA setup incomplete: " +
-                            "Burp=${caResult.burpRunning}, " +
-                            "Downloaded=${caResult.certDownloaded}, " +
-                            "Installed=${caResult.certInstalled}",
-                    data = caResult
-                )
-            }
-        } catch (e: Exception) {
-            logger.error(e) { "User CA setup failed" }
-            PhaseResult(success = false, message = e.message ?: "Unknown error")
-        }
-    }
-
-    private suspend fun setupProxy(): PhaseResult {
-        return try {
-            println("📡 Configuring proxy on device...")
-            println()
-
-            val proxyManager = ProxyManager(device)
-            val proxyResult = proxyManager.setupForSSLBypass()
-
-            if (proxyResult.isReady) {
-                PhaseResult(
-                    success = true,
-                    message = "Proxy configured and reachable",
-                    data = proxyResult
-                )
-            } else {
-                PhaseResult(
-                    success = false,
-                    message = "Proxy setup incomplete: " +
-                            "Configured=${proxyResult.proxyConfigured}, " +
-                            "Reachable=${proxyResult.proxyReachable}",
-                    data = proxyResult
-                )
-            }
-        } catch (e: Exception) {
-            logger.error(e) { "Proxy setup failed" }
-            PhaseResult(success = false, message = e.message ?: "Unknown error")
-        }
-    }
-
     private suspend fun handleSemiSpecificQuery(
         query: String,
         collector: ContextCollector,
@@ -516,7 +362,7 @@ class FridaLLMTool : CliktCommand() {
         println("Keywords: ${hints.joinToString(", ")}")
 
         println("\n📊 Collecting context...")
-        val context = collector.collectFullContext()
+        val context = collector.collectBasicContext()
 
         if (context == null) {
             println("❌ Failed to collect context")
@@ -703,7 +549,10 @@ class FridaLLMTool : CliktCommand() {
         collector: ContextCollector,
         promptBuilder: PromptBuilder,
         llmClient: LLMClient?,
-        executor: ScriptExecutor
+        executor: ScriptExecutor,
+        retryManager: RetryManager?,
+        logcatCapture: LogcatCapture,
+        stacktraceContent: String? = null
     ) {
         println("\n📊 Collecting full context for generic query...")
 
@@ -735,6 +584,7 @@ class FridaLLMTool : CliktCommand() {
         val prompt = promptBuilder.buildGenericPrompt(
             query = query,
             context = context,
+            stacktrace = stacktraceContent,
             needsMultipleHooks = needsMultiHooks,
         )
 
@@ -779,8 +629,22 @@ class FridaLLMTool : CliktCommand() {
         // Executar se não for dry-run
         if (!dryRun) {
             println("\n🚀 Executing script...")
-            val result = executor.execute(generated.script, durationSeconds = 20)
+            val (result, logcat) = logcatCapture.around {
+                executor.execute(generated.script, durationSeconds = 20)
+            }
             println(executor.formatOutput(result))
+
+            // Registrar execução para retry
+            val serializedContext = Json { prettyPrint = true }.encodeToString(context)
+            retryManager?.recordExecution(
+                ExecutionRecord.fromExecution(
+                    script = generated.script,
+                    query = query,
+                    collectedContext = serializedContext,
+                    result = result,
+                    logcatOutput = logcat
+                )
+            )
         } else {
             println("\n ℹ️  Dry-run mode - script not executed")
         }
@@ -793,7 +657,9 @@ class FridaLLMTool : CliktCommand() {
         collector: ContextCollector,
         promptBuilder: PromptBuilder,
         llmClient: LLMClient?,
-        executor: ScriptExecutor
+        executor: ScriptExecutor,
+        retryManager: RetryManager?,
+        logcatCapture: LogcatCapture,
     ) {
         println("\n╔════════════════════════════════════════╗")
         println("║         Interactive Mode               ║")
@@ -803,6 +669,7 @@ class FridaLLMTool : CliktCommand() {
         println("  • Specific: 'hook com.example.Class.method() return false'")
         println("  • Generic:  'bypass emulator detection'")
         println("  • Commands: 'stats', 'classes', 'frameworks', 'help', 'exit'")
+        println("  • Retry:    '/retry <feedback>' to correct last script")
 
         if (llmClient == null) {
             println("\n⚠️  No API key - use 'setkey <key>' to enable LLM features")
@@ -892,6 +759,62 @@ class FridaLLMTool : CliktCommand() {
                     }
                     continue
                 }
+
+                // Comando /retry
+                input.lowercase().startsWith("/retry") -> {
+                    if (retryManager == null) {
+                        println("⚠️  No API key set. Retry requires LLM access.")
+                        continue
+                    }
+
+                    if (!retryManager.hasRecordForRetry()) {
+                        println("⚠️  No previous execution to retry. Run a query first.")
+                        continue
+                    }
+
+                    // Extrair feedback do analista (tudo após "/retry ")
+                    val feedback = input.removePrefix("/retry").trim().ifEmpty { null }
+
+                    println("\n🔄 Retrying with correction...")
+                    if (feedback != null) {
+                        println("   Analyst feedback: \"$feedback\"")
+                    } else {
+                        println("   No feedback provided, LLM will analyze logs autonomously")
+                    }
+
+                    try {
+                        val retryResult = retryManager.retry(feedback)
+
+                        if (retryResult == null) {
+                            println("❌ Failed to generate corrected script")
+                            continue
+                        }
+
+                        println("\n✅ Corrected script generated (${retryResult.generatedScript.tokensUsed} tokens)")
+
+                        // Mostrar script corrigido
+                        println("\n📜 Corrected Script (attempt ${retryResult.record.attemptNumber}):")
+                        println("━".repeat(50))
+                        println(retryResult.generatedScript.script)
+                        println("━".repeat(50))
+
+                        // Mostrar resultado da execução
+                        println(executor.formatOutput(retryResult.record.executionResult))
+
+                        // Salvar se solicitado
+                        saveScript?.let { path ->
+                            File("$path/test.js").writeText(retryResult.generatedScript.script)
+                            println("💾 Corrected script saved to: $path")
+                        }
+
+                        println("\n💡 Use '/retry <feedback>' to correct again, or submit a new query.")
+                    } catch (e: Exception) {
+                        println("❌ Retry error: ${e.message}")
+                        logger.error(e) { "Retry execution error" }
+                    }
+
+                    continue
+                }
             }
 
             // Process as query
@@ -908,7 +831,9 @@ class FridaLLMTool : CliktCommand() {
                             parser = parser,
                             promptBuilder = promptBuilder,
                             llmClient = llmClient,
-                            executor = executor
+                            executor = executor,
+                            retryManager = retryManager,
+                            logcatCapture = logcatCapture
                         )
                     }
                 } catch (e: Exception) {
@@ -937,11 +862,16 @@ class FridaLLMTool : CliktCommand() {
           frameworks  - Show detected frameworks
           help        - Show this help
           exit        - Exit interactive mode
+          
+        Correction:
+         /retry                - Correct last script (LLM analyzes logs)
+         /retry <feedback>     - Correct with analyst feedback
         
         Examples:
           hook com.example.SecurityCheck.isEmulator() return false
           bypass emulator detection
           intercept com.example.api.LoginService.login
+          /retry hooked wrong method, should intercept validatePin
           
         """.trimIndent()
         )
@@ -950,18 +880,17 @@ class FridaLLMTool : CliktCommand() {
     private fun printBanner() {
         println(
             """
-            ╔═══════════════════════════════════════════════╗
-            ║     Frida LLM Tool - Research Project         ║
-            ║     AI-Powered Mobile Instrumentation         ║
-            ║                                               ║
-            ║     Multi-Hook Support:                       ║
-            ║     Hook multiple methods in one query!       ║
-            ║                                               ║
-            ║  Smart Query Routing:                         ║
-            ║    ⚡ Specific   → 1-2s  (95% accuracy)        ║
-            ║    🎯 Targeted   → 3-5s  (80% accuracy)       ║
-            ║    🔎 Discovery  → 5-10s (70% accuracy)       ║
-            ╚═══════════════════════════════════════════════╝
+            ╔════════════════════════════════════════════════╗
+            ║            FridaForge v0.2                     ║
+            ║     AI-Powered Mobile Instrumentation          ║
+            ║                                                ║
+            ║  Smart Query Routing:                          ║
+            ║    ⚡ Specific   → Direct hook generation       ║
+            ║    🎯 Targeted   → Context-aware generation    ║
+            ║    🔎 Generic    → Full discovery + generation ║
+            ║                                                ║
+            ║  🔄 /retry      → Iterative script correction  ║
+            ╚════════════════════════════════════════════════╝
         """.trimIndent()
         )
     }

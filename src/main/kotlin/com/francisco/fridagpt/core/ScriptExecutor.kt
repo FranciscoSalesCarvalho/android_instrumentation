@@ -1,5 +1,6 @@
 package com.francisco.fridagpt.core
 
+import com.francisco.fridagpt.utils.LogcatCapture
 import mu.KotlinLogging
 import java.io.File
 
@@ -12,14 +13,21 @@ data class ExecutionResult(
     val success: Boolean,
     val output: String,
     val error: String? = null,
+    val logcatOutput: String = "",
     val executionTimeMs: Long
 )
 
 /**
- * Executa e gerencia scripts Frida gerados
+ * Executa e gerencia scripts Frida gerados.
+ *
+ * @param connector Conector Frida para execução de scripts
+ * @param logcatCapture Captura de logcat (opcional). Quando presente,
+ *        o executor limpa o logcat antes da execução e captura os logs
+ *        filtrados automaticamente após a execução.
  */
 class ScriptExecutor(
-    private val connector: FridaConnector
+    private val connector: FridaConnector,
+    private val logcatCapture: LogcatCapture? = null
 ) {
 
     /**
@@ -60,10 +68,26 @@ class ScriptExecutor(
     }
 
     /**
-     * Executa script e monitora output
+     * Executa script e monitora output.
+     * Se LogcatCapture estiver configurado, captura logcat automaticamente.
      */
     suspend fun execute(script: String, durationSeconds: Int = 10): ExecutionResult {
         logger.info { "Executing Frida script (duration: ${durationSeconds}s)..." }
+
+        if (logcatCapture != null) {
+            val (result, logcat) = logcatCapture.around {
+                executeInternal(script)
+            }
+            return result.copy(logcatOutput = logcat)
+        }
+
+        return executeInternal(script)
+    }
+
+    /**
+     * Executa script e monitora output
+     */
+    private suspend fun executeInternal(script: String): ExecutionResult {
 
         val startTime = System.currentTimeMillis()
 
