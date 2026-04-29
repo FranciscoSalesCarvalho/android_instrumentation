@@ -159,9 +159,9 @@ Java.perform(function() {
 In interactive mode, you can use the same syntax:
 
 ```
-frida-llm> hook com.example.Check1.verify() return false AND hook com.example.Check2.validate() return false
+fridaforge> hook com.example.Check1.verify() return false AND hook com.example.Check2.validate() return false
 
-frida-llm> bypass com.example.Security.isEmulator(), bypass com.example.Security.isRooted()
+fridaforge> bypass com.example.Security.isEmulator(), bypass com.example.Security.isRooted()
 ```
 
 ## Tips

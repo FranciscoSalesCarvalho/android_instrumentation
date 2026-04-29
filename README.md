@@ -42,6 +42,8 @@ expertise in the Frida API and knowledge of the target application's internals. 
    elements
 4. **Validating and executing** — automatically extracting, validating, and injecting the script into the target
    application
+5. **Iterative correction** — when a script fails or produces unexpected results, the analyst can trigger a correction
+   cycle that feeds execution logs and feedback back to the LLM for refinement
 
 Queries can be formulated at three specificity levels:
 
@@ -119,7 +121,10 @@ frida-ps -Ua
 ./gradlew run --args="-p com.example.app -k $ANTHROPIC_API_KEY -i"
 
 # 3. Type a query
-frida-llm> bypass emulator detection
+fridaforge> bypass emulator detection
+
+# 4. If the result is not as expected, correct it
+fridaforge> /retry hooked wrong method, should target isEmulator in EmulatorDetectionActivity
 ```
 
 ---
@@ -134,14 +139,37 @@ frida-llm> bypass emulator detection
 
 Commands available in interactive mode:
 
-| Command       | Description                           |
-|---------------|---------------------------------------|
-| `<any query>` | Generate and execute a Frida script   |
-| `classes`     | List collected application classes    |
-| `frameworks`  | Show detected libraries               |
-| `stats`       | Display context collection statistics |
-| `help`        | Show available commands               |
-| `exit`        | Quit interactive mode                 |
+| Command             | Description                                       |
+|---------------------|---------------------------------------------------|
+| `<any query>`       | Generate and execute a Frida script               |
+| `/retry`            | Correct last script (LLM analyzes execution logs) |
+| `/retry <feedback>` | Correct last script with analyst feedback         |
+| `classes`           | List collected application classes                |
+| `frameworks`        | Show detected libraries                           |
+| `stats`             | Display context collection statistics             |
+| `help`              | Show available commands                           |
+| `exit`              | Quit interactive mode                             |
+
+### Iterative Script Correction
+
+When a generated script does not produce the expected result — whether due to a technical error (crash, exception) or a
+semantic issue (wrong method hooked, irrelevant output) — the analyst can trigger a correction cycle using `/retry`:
+
+```bash
+# Without feedback: LLM analyzes Frida output and logcat automatically
+fridaforge> /retry
+ 
+# With feedback: analyst provides diagnosis to guide correction
+fridaforge> /retry the script intercepted checkPassword instead of validatePin
+fridaforge> /retry script crashed, try hooking ContextWrapper instead of Context
+```
+
+The correction cycle combines three sources of information:
+
+- **Execution logs** — Frida stdout/stderr and filtered Android logcat, captured automatically during execution
+- **Analyst feedback** — optional textual diagnosis provided via `/retry`
+- **Application context** — the same runtime context (classes, methods, libraries) collected for the original query
+  The analyst can invoke `/retry` as many times as needed. Each correction builds on the immediately preceding attempt.
 
 ### Single Query Mode
 
@@ -210,6 +238,22 @@ Commands available in interactive mode:
 ./gradlew run --args="-p com.example.app -q 'hook Class1.method1() return false AND hook Class2.method2() return false'"
 ```
 
+### Iterative Correction
+
+```bash
+# Start interactive mode
+./gradlew run --args="-p com.android.insecurebankv2 -k $ANTHROPIC_API_KEY -i"
+ 
+# Generate initial script
+fridaforge> intercept credentials from LoginActivity
+ 
+# Script hooks wrong method — correct it
+fridaforge> /retry should hook doLogin not onCreate
+ 
+# Still not right — refine further
+fridaforge> /retry intercept the HTTP request body, credentials are sent via POST
+```
+
 ---
 
 ## Project Structure
@@ -235,7 +279,8 @@ fridaforge/
     │   ├── ContextCollector.kt        # Dynamic context collection
     │   ├── QueryRouter.kt             # Query type classification
     │   ├── QueryParser.kt             # Specific query parsing
-    │   └── ScriptExecutor.kt          # Script validation & execution
+    │   ├── ScriptExecutor.kt          # Script validation & execution
+    │   └── RetryManager.kt            # Iterative correction orchestration
     ├── collectors/
     │   ├── AppInfoCollector.kt        # App metadata
     │   ├── ClassCollector.kt          # Class enumeration
@@ -246,11 +291,15 @@ fridaforge/
     │   └── NativeLibraryCollector.kt  # Native module enumeration
     ├── llm/
     │   ├── LLMClient.kt              # Claude API client
-    │   └── PromptBuilder.kt          # Context-aware prompt construction
-    └── models/
-        ├── AppContext.kt              # Application context model
-        ├── ClassInfo.kt               # Class/method data
-        └── GeneratedScript.kt         # Script result model
+    │   ├── PromptBuilder.kt          # Context-aware prompt construction
+    │   └── CorrectionPromptBuilder.kt # Correction prompt construction
+    ├── models/
+    │   ├── AppContext.kt              # Application context model
+    │   ├── ClassInfo.kt               # Class/method data
+    │   ├── ExecutionRecord.kt         # Execution state for retry
+    │   └── GeneratedScript.kt         # Script result model
+    └── utils/
+        └── LogcatCapture.kt           # Logcat capture and filtering
 ```
 
 ---
@@ -261,19 +310,19 @@ The evaluation described in the paper can be reproduced as follows:
 
 ### 1. Benchmark Applications
 
-| ID  | Application          | MASTG ID       | Source                                                           |
-|-----|----------------------|----------------|------------------------------------------------------------------|
-| A1  | AndroGoat            | MASTG-APP-0001 | [GitHub](https://github.com/satishpatnayak/AndroGoat)            |
-| A2  | UnCrackable L1       | MASTG-APP-0003 | [OWASP MASTG](https://mas.owasp.org/crackmes/Android/)           |
-| A3  | DIVA                 | MASTG-APP-0007 | [GitHub](https://github.com/payatu/diva-android)                 |
-| A4  | DodoVulnerableBank   | MASTG-APP-0008 | [GitHub](https://github.com/CSPF-Founder/DodoVulnerableBank)     |
-| A5  | InsecureBankv2       | MASTG-APP-0010 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2) |
-| A6  | OVAA                 | MASTG-APP-0013 | [GitHub](https://github.com/oversecured/ovaa)                    |
-| A7  | Finstergram          | MASTG-APP-0016 | [GitHub](https://github.com/netlight/finstergram)                |
-| A8  | MASTestApp-NETWORK   | MASTG-APP-0018 | [OWASP MASTG](https://github.com/sydseter/MASTestApp-Android-NETWORK)             |
-| A9  | BugBazaar            | MASTG-APP-0029 | [GitHub](https://github.com/payatu/BugBazaar)                   |
-| A10 | VulnForum            | MASTG-APP-0031 | [GitHub](https://github.com/macik09/Vulnforum)                   |
-| A11 | Damn Vulnerable Bank | —              | [GitHub](https://github.com/rewanthtammana/Damn-Vulnerable-Bank) |
+| ID  | Application          | MASTG ID       | Source                                                                |
+|-----|----------------------|----------------|-----------------------------------------------------------------------|
+| A1  | AndroGoat            | MASTG-APP-0001 | [GitHub](https://github.com/satishpatnayak/AndroGoat)                 |
+| A2  | UnCrackable L1       | MASTG-APP-0003 | [OWASP MASTG](https://mas.owasp.org/crackmes/Android/)                |
+| A3  | DIVA                 | MASTG-APP-0007 | [GitHub](https://github.com/payatu/diva-android)                      |
+| A4  | DodoVulnerableBank   | MASTG-APP-0008 | [GitHub](https://github.com/CSPF-Founder/DodoVulnerableBank)          |
+| A5  | InsecureBankv2       | MASTG-APP-0010 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2)      |
+| A6  | OVAA                 | MASTG-APP-0013 | [GitHub](https://github.com/oversecured/ovaa)                         |
+| A7  | Finstergram          | MASTG-APP-0016 | [GitHub](https://github.com/netlight/finstergram)                     |
+| A8  | MASTestApp-NETWORK   | MASTG-APP-0018 | [OWASP MASTG](https://github.com/sydseter/MASTestApp-Android-NETWORK) |
+| A9  | BugBazaar            | MASTG-APP-0029 | [GitHub](https://github.com/payatu/BugBazaar)                         |
+| A10 | VulnForum            | MASTG-APP-0031 | [GitHub](https://github.com/macik09/Vulnforum)                        |
+| A11 | Damn Vulnerable Bank | —              | [GitHub](https://github.com/rewanthtammana/Damn-Vulnerable-Bank)      |
 
 ### 2. Environment Setup
 
@@ -303,7 +352,7 @@ adb shell pm clear <package_name>
 
 ### 4. Experiment Results
 
-Full results (N=5, 175 executions) are available in `artifacts/FridaForge_Resultados_N5.xlsx`.
+Full results (N=5, 475 executions) are available in `artifacts/FridaForge_Resultados_N5.xlsx`.
 
 ---
 
