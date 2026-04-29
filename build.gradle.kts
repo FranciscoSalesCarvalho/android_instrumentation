@@ -53,7 +53,7 @@ tasks.named<JavaExec>("run") {
 
 // Configurar JAR executável com nome fixo
 tasks.jar {
-    archiveFileName.set("FridaGPT.jar")
+    archiveFileName.set("fridaforge.jar")
 
     manifest {
         attributes(
@@ -74,7 +74,7 @@ tasks.jar {
 
 // Task alternativa para criar JAR executável standalone
 tasks.register<Jar>("fatJar") {
-    archiveFileName.set("FridaGPT.jar")
+    archiveFileName.set("fridaforge.jar")
 
     manifest {
         attributes["Main-Class"] = "com.francisco.fridagpt.Main"
