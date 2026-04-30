@@ -1,0 +1,164 @@
+{
+    "appInfo": {
+        "packageName": "edu.ksu.cs.benign",
+        "targetSdk": 27,
+        "minSdk": 22,
+        "isDebuggable": true,
+        "backupActive": false,
+        "dataDir": "/data/user/0/edu.ksu.cs.benign"
+    },
+    "classes": [
+        {
+            "name": "edu.ksu.cs.benign.MainActivity",
+            "packageName": "edu.ksu.cs.benign",
+            "methods": [
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "onResume",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "onResume():void"
+                }
+            ]
+        },
+        {
+            "name": "edu.ksu.cs.benign.MyIntentService",
+            "packageName": "edu.ksu.cs.benign",
+            "methods": [
+                {
+                    "name": "copyInputStreamToString",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                        {
+                            "type": "java.io.InputStream"
+                        }
+                    ],
+                    "signature": "copyInputStreamToString(java.io.InputStream):java.lang.String"
+                },
+                {
+                    "name": "onHandleIntent",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.content.Intent"
+                        }
+                    ],
+                    "signature": "onHandleIntent(android.content.Intent):void"
+                }
+            ]
+        },
+        {
+            "name": "edu.ksu.cs.benign.MyTrustManager",
+            "packageName": "edu.ksu.cs.benign",
+            "methods": [
+                {
+                    "name": "checkClientTrusted",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "[Ljava.security.cert.X509Certificate;"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "checkClientTrusted([Ljava.security.cert.X509Certificate;,java.lang.String):void"
+                },
+                {
+                    "name": "checkServerTrusted",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "[Ljava.security.cert.X509Certificate;"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "checkServerTrusted([Ljava.security.cert.X509Certificate;,java.lang.String):void"
+                },
+                {
+                    "name": "getAcceptedIssuers",
+                    "returnType": "[Ljava.security.cert.X509Certificate;",
+                    "parameters": [
+                    ],
+                    "signature": "getAcceptedIssuers():[Ljava.security.cert.X509Certificate;"
+                }
+            ]
+        },
+        {
+            "name": "edu.ksu.cs.benign.ResponseActivity",
+            "packageName": "edu.ksu.cs.benign",
+            "methods": [
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                }
+            ]
+        },
+        {
+            "name": "edu.ksu.cs.benign.MyIntentService$1",
+            "packageName": "edu.ksu.cs.benign",
+            "methods": [
+                {
+                    "name": "verify",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        },
+                        {
+                            "type": "javax.net.ssl.SSLSession"
+                        }
+                    ],
+                    "signature": "verify(java.lang.String,javax.net.ssl.SSLSession):boolean"
+                }
+            ]
+        }
+    ],
+    "libraries": [
+    ],
+    "manifest": {
+        "permissions": [
+            "android.permission.INTERNET",
+            "android.permission.POST_NOTIFICATIONS"
+        ],
+        "activities": [
+            {
+                "name": "edu.ksu.cs.benign.MainActivity",
+                "exported": true
+            },
+            {
+                "name": "edu.ksu.cs.benign.ResponseActivity",
+                "exported": false
+            }
+        ],
+        "services": [
+            {
+                "name": "edu.ksu.cs.benign.MyIntentService",
+                "exported": false
+            }
+        ],
+        "receivers": [
+        ],
+        "minSdk": 22,
+        "targetSdk": 27,
+        "isDebuggable": true
+    }
+}

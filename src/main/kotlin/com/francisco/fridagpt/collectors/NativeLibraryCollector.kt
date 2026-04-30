@@ -51,10 +51,6 @@ class NativeLibraryCollector(
 
             val context = json.decodeFromString<NativeContext>(jsonPayload)
 
-            logger.info { "  Arch: ${context.arch}" }
-            logger.info { "  Modules: ${context.summary.app} app / ${context.summary.total} total" }
-            logger.info { "  Protections: ${context.protections.size}" }
-
             context.protections.forEach { p ->
                 logger.warn { "  [${p.category}] ${p.func} @ ${p.module}" }
             }

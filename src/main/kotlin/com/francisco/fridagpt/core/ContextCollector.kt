@@ -68,7 +68,6 @@ class ContextCollector(
      * Coleta métodos de uma classe específica SOB DEMANDA
      */
     suspend fun collectMethodsForClass(className: String): List<MethodInfo> {
-        logger.info { "Collecting methods for class: $className" }
 
         val script = """
             Java.perform(function() {
@@ -166,8 +165,6 @@ class ContextCollector(
                     classInfo.copy(methods = methods)
                 }
             }
-
-            logger.info { "Collected ${classesWithMethods.sumOf { it.methods.size }} methods total" }
 
             // 5. Retorna contexto enriquecido
             AppContext(
@@ -305,8 +302,6 @@ class ContextCollector(
             } else {
                 allMethods.take(10) // Top 10 métodos
             }
-
-            logger.debug { "${classInfo.name}: ${methodsToInclude.size} relevant methods" }
 
             classInfo.copy(methods = methodsToInclude)
         }

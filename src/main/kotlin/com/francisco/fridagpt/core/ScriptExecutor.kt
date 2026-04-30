@@ -96,8 +96,6 @@ class ScriptExecutor(
             val scriptFile = File.createTempFile("frida_generated_", ".js")
             scriptFile.writeText(script)
 
-            logger.info { "Script saved to: ${scriptFile.absolutePath}" }
-
             // Executa script
             val output = connector.executeScript2(script)
 

@@ -1,211 +1,109 @@
 Java.perform(function() {
-    console.log("[+] Starting encryption interception script...");
+    console.log("[+] Starting SSL/TLS certificate validation interception");
     
-    // Hook javax.crypto.Cipher
+    // Hook the custom TrustManager implementation
     try {
-        var Cipher = Java.use("javax.crypto.Cipher");
+        var MyTrustManager = Java.use("edu.ksu.cs.benign.MyTrustManager");
         
-        // Hook getInstance method to capture cipher algorithm and mode
-        Cipher.getInstance.overload('java.lang.String').implementation = function(transformation) {
-            console.log("[+] Cipher.getInstance() called");
-            console.log("    Transformation: " + transformation);
+        MyTrustManager.checkServerTrusted.implementation = function(chain, authType) {
+            console.log("[!] MyTrustManager.checkServerTrusted() called");
+            console.log("[*] Certificate chain length: " + chain.length);
+            console.log("[*] Auth type: " + authType);
             
-            var result = this.getInstance(transformation);
+            // Log certificate details
+            for (var i = 0; i < chain.length; i++) {
+                var cert = chain[i];
+                console.log("[*] Certificate " + i + ":");
+                console.log("    Subject: " + cert.getSubjectDN());
+                console.log("    Issuer: " + cert.getIssuerDN());
+                console.log("    Serial: " + cert.getSerialNumber());
+            }
+            
+            // Check if the original method would throw an exception
+            try {
+                this.checkServerTrusted.call(this, chain, authType);
+                console.log("[+] Certificate validation PASSED - App properly validates certificates");
+            } catch (e) {
+                console.log("[!] Certificate validation FAILED - App detected invalid certificate: " + e);
+                throw e;
+            }
+        };
+        
+        MyTrustManager.getAcceptedIssuers.implementation = function() {
+            var result = this.getAcceptedIssuers.call(this);
+            console.log("[*] MyTrustManager.getAcceptedIssuers() called - returned " + (result ? result.length : 0) + " issuers");
             return result;
         };
         
-        Cipher.getInstance.overload('java.lang.String', 'java.lang.String').implementation = function(transformation, provider) {
-            console.log("[+] Cipher.getInstance() called with provider");
-            console.log("    Transformation: " + transformation);
-            console.log("    Provider: " + provider);
-            
-            var result = this.getInstance(transformation, provider);
-            return result;
-        };
-        
-        // Hook init methods to capture keys and parameters
-        Cipher.init.overload('int', 'java.security.Key').implementation = function(opmode, key) {
-            console.log("[+] Cipher.init() called");
-            console.log("    Operation mode: " + opmode + " (" + (opmode == 1 ? "ENCRYPT" : opmode == 2 ? "DECRYPT" : "OTHER") + ")");
-            console.log("    Algorithm: " + this.getAlgorithm());
-            
-            if (key) {
-                try {
-                    console.log("    Key algorithm: " + key.getAlgorithm());
-                    console.log("    Key format: " + key.getFormat());
-                    var keyBytes = key.getEncoded();
-                    if (keyBytes) {
-                        var keyHex = "";
-                        for (var i = 0; i < keyBytes.length; i++) {
-                            keyHex += ("0" + (keyBytes[i] & 0xFF).toString(16)).slice(-2);
-                        }
-                        console.log("    Key (hex): " + keyHex);
-                    }
-                } catch (e) {
-                    console.log("    Key details unavailable: " + e);
-                }
-            }
-            
-            return this.init(opmode, key);
-        };
-        
-        Cipher.init.overload('int', 'java.security.Key', 'java.security.spec.AlgorithmParameterSpec').implementation = function(opmode, key, params) {
-            console.log("[+] Cipher.init() called with parameters");
-            console.log("    Operation mode: " + opmode + " (" + (opmode == 1 ? "ENCRYPT" : opmode == 2 ? "DECRYPT" : "OTHER") + ")");
-            console.log("    Algorithm: " + this.getAlgorithm());
-            
-            if (key) {
-                try {
-                    console.log("    Key algorithm: " + key.getAlgorithm());
-                    var keyBytes = key.getEncoded();
-                    if (keyBytes) {
-                        var keyHex = "";
-                        for (var i = 0; i < keyBytes.length; i++) {
-                            keyHex += ("0" + (keyBytes[i] & 0xFF).toString(16)).slice(-2);
-                        }
-                        console.log("    Key (hex): " + keyHex);
-                    }
-                } catch (e) {
-                    console.log("    Key details unavailable: " + e);
-                }
-            }
-            
-            if (params) {
-                console.log("    Parameters: " + params.toString());
-            }
-            
-            return this.init(opmode, key, params);
-        };
-        
-        // Hook doFinal methods to capture input/output data
-        Cipher.doFinal.overload('[B').implementation = function(input) {
-            console.log("[+] Cipher.doFinal() called");
-            console.log("    Algorithm: " + this.getAlgorithm());
-            
-            if (input) {
-                var inputHex = "";
-                for (var i = 0; i < input.length; i++) {
-                    inputHex += ("0" + (input[i] & 0xFF).toString(16)).slice(-2);
-                }
-                console.log("    Input data (hex): " + inputHex);
-                console.log("    Input data (string): " + Java.use("java.lang.String").$new(input));
-            }
-            
-            var result = this.doFinal(input);
-            
-            if (result) {
-                var outputHex = "";
-                for (var i = 0; i < result.length; i++) {
-                    outputHex += ("0" + (result[i] & 0xFF).toString(16)).slice(-2);
-                }
-                console.log("    Output data (hex): " + outputHex);
-                try {
-                    console.log("    Output data (string): " + Java.use("java.lang.String").$new(result));
-                } catch (e) {
-                    console.log("    Output data not printable as string");
-                }
-            }
-            
-            return result;
-        };
-        
-        Cipher.doFinal.overload().implementation = function() {
-            console.log("[+] Cipher.doFinal() called (no parameters)");
-            console.log("    Algorithm: " + this.getAlgorithm());
-            
-            var result = this.doFinal();
-            
-            if (result) {
-                var outputHex = "";
-                for (var i = 0; i < result.length; i++) {
-                    outputHex += ("0" + (result[i] & 0xFF).toString(16)).slice(-2);
-                }
-                console.log("    Output data (hex): " + outputHex);
-            }
-            
-            return result;
-        };
-        
-        // Hook update method to capture intermediate data
-        Cipher.update.overload('[B').implementation = function(input) {
-            console.log("[+] Cipher.update() called");
-            console.log("    Algorithm: " + this.getAlgorithm());
-            
-            if (input) {
-                var inputHex = "";
-                for (var i = 0; i < input.length; i++) {
-                    inputHex += ("0" + (input[i] & 0xFF).toString(16)).slice(-2);
-                }
-                console.log("    Update input (hex): " + inputHex);
-            }
-            
-            var result = this.update(input);
-            
-            if (result) {
-                var outputHex = "";
-                for (var i = 0; i < result.length; i++) {
-                    outputHex += ("0" + (result[i] & 0xFF).toString(16)).slice(-2);
-                }
-                console.log("    Update output (hex): " + outputHex);
-            }
-            
-            return result;
-        };
-        
-        console.log("[+] Successfully hooked javax.crypto.Cipher methods");
-        
+        console.log("[+] Hooked MyTrustManager methods");
     } catch (e) {
-        console.log("[-] Error hooking Cipher: " + e);
+        console.log("[!] Failed to hook MyTrustManager: " + e);
     }
     
-    // Hook SecretKeySpec to capture key creation
+    // Hook standard Android TrustManager implementations
     try {
-        var SecretKeySpec = Java.use("javax.crypto.spec.SecretKeySpec");
+        var X509TrustManager = Java.use("javax.net.ssl.X509TrustManager");
+        var TrustManagerImpl = Java.use("com.android.org.conscrypt.TrustManagerImpl");
         
-        SecretKeySpec.$init.overload('[B', 'java.lang.String').implementation = function(key, algorithm) {
-            console.log("[+] SecretKeySpec created");
-            console.log("    Algorithm: " + algorithm);
+        TrustManagerImpl.checkServerTrusted.overload('[Ljava.security.cert.X509Certificate;', 'java.lang.String', 'java.lang.String').implementation = function(chain, authType, host) {
+            console.log("[!] TrustManagerImpl.checkServerTrusted() called");
+            console.log("[*] Host: " + host);
+            console.log("[*] Auth type: " + authType);
+            console.log("[*] Certificate chain length: " + chain.length);
             
-            if (key) {
-                var keyHex = "";
-                for (var i = 0; i < key.length; i++) {
-                    keyHex += ("0" + (key[i] & 0xFF).toString(16)).slice(-2);
-                }
-                console.log("    Key bytes (hex): " + keyHex);
+            try {
+                this.checkServerTrusted.overload('[Ljava.security.cert.X509Certificate;', 'java.lang.String', 'java.lang.String').call(this, chain, authType, host);
+                console.log("[+] System certificate validation PASSED");
+            } catch (e) {
+                console.log("[!] System certificate validation FAILED: " + e);
+                throw e;
             }
-            
-            return this.$init(key, algorithm);
         };
         
-        console.log("[+] Successfully hooked SecretKeySpec");
-        
+        console.log("[+] Hooked TrustManagerImpl");
     } catch (e) {
-        console.log("[-] Error hooking SecretKeySpec: " + e);
+        console.log("[!] Failed to hook TrustManagerImpl: " + e);
     }
     
-    // Hook IvParameterSpec to capture initialization vectors
+    // Hook SSLContext initialization to detect trust manager usage
     try {
-        var IvParameterSpec = Java.use("javax.crypto.spec.IvParameterSpec");
+        var SSLContext = Java.use("javax.net.ssl.SSLContext");
         
-        IvParameterSpec.$init.overload('[B').implementation = function(iv) {
-            console.log("[+] IvParameterSpec created");
+        SSLContext.init.implementation = function(keyManagers, trustManagers, secureRandom) {
+            console.log("[!] SSLContext.init() called");
             
-            if (iv) {
-                var ivHex = "";
-                for (var i = 0; i < iv.length; i++) {
-                    ivHex += ("0" + (iv[i] & 0xFF).toString(16)).slice(-2);
+            if (trustManagers != null) {
+                console.log("[*] TrustManagers array length: " + trustManagers.length);
+                for (var i = 0; i < trustManagers.length; i++) {
+                    console.log("[*] TrustManager[" + i + "]: " + trustManagers[i].getClass().getName());
                 }
-                console.log("    IV (hex): " + ivHex);
+            } else {
+                console.log("[!] WARNING: No TrustManagers provided - using default!");
             }
             
-            return this.$init(iv);
+            this.init.call(this, keyManagers, trustManagers, secureRandom);
         };
         
-        console.log("[+] Successfully hooked IvParameterSpec");
-        
+        console.log("[+] Hooked SSLContext.init()");
     } catch (e) {
-        console.log("[-] Error hooking IvParameterSpec: " + e);
+        console.log("[!] Failed to hook SSLContext: " + e);
     }
     
-    console.log("[+] Encryption interception script loaded successfully");
+    // Hook HttpsURLConnection to monitor certificate verification
+    try {
+        var HttpsURLConnection = Java.use("javax.net.ssl.HttpsURLConnection");
+        
+        HttpsURLConnection.setDefaultHostnameVerifier.implementation = function(hostnameVerifier) {
+            console.log("[!] HttpsURLConnection.setDefaultHostnameVerifier() called");
+            console.log("[*] HostnameVerifier: " + hostnameVerifier.getClass().getName());
+            
+            this.setDefaultHostnameVerifier.call(this, hostnameVerifier);
+        };
+        
+        console.log("[+] Hooked HttpsURLConnection");
+    } catch (e) {
+        console.log("[!] Failed to hook HttpsURLConnection: " + e);
+    }
+    
+    console.log("[+] SSL/TLS certificate validation hooks installed");
 });

@@ -5,6 +5,7 @@ import com.francisco.fridagpt.llm.GeneratedScript
 import com.francisco.fridagpt.llm.LLMClient
 import com.francisco.fridagpt.models.ExecutionRecord
 import com.francisco.fridagpt.utils.LogcatCapture
+import com.francisco.fridagpt.utils.Spinner
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -69,7 +70,9 @@ class RetryManager(
         logger.debug { "Correction prompt length: ${correctionPrompt.length} chars" }
 
         // 2. Enviar ao LLM
-        val generatedScript = llmClient.generateScript(correctionPrompt)
+        val generatedScript = Spinner.withSpinner("\n🤖 Generating Frida script with Claude...") {
+            llmClient.generateScript(correctionPrompt, maxTokens = 8192)
+        }
         if (generatedScript == null) {
             logger.error { "LLM failed to generate corrected script" }
             return null
@@ -112,20 +115,6 @@ class RetryManager(
      * Verifica se há uma execução anterior disponível para retry.
      */
     fun hasRecordForRetry(): Boolean = lastRecord != null
-
-    /**
-     * Retorna informações resumidas da última execução para exibição.
-     */
-    fun lastExecutionSummary(): String? {
-        val record = lastRecord ?: return null
-        return buildString {
-            appendLine("Last execution (attempt ${record.attemptNumber}):")
-            appendLine("  Query: ${record.query}")
-            appendLine("  Status: ${record.status}")
-            appendLine("  Success: ${record.executionResult.success}")
-            appendLine("  Time: ${record.executionResult.executionTimeMs}ms")
-        }
-    }
 }
 
 /**

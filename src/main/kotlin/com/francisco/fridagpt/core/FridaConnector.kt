@@ -67,7 +67,6 @@ class FridaConnector(
 
             // Executa via frida CLI
             val command = buildFridaCommand(scriptFile.absolutePath)
-            logger.debug { "Executing: ${command.joinToString(" ")}" }
 
             val processBuilder = ProcessBuilder(command)
             processBuilder.redirectErrorStream(true)
@@ -83,7 +82,6 @@ class FridaConnector(
                     line?.let {
                         if (count == 1 && line != "UFAM") {
                             output.appendLine(it)
-                            logger.debug { "Frida: $it" }
                         }
                     }
 
@@ -123,7 +121,6 @@ class FridaConnector(
 
             // Executa via frida CLI
             val command = buildFridaCommand2(scriptFile.absolutePath)
-            logger.debug { "Executing: ${command.joinToString(" ")}" }
 
             val processBuilder = ProcessBuilder(command)
             processBuilder.redirectErrorStream(true)
@@ -375,8 +372,6 @@ class FridaConnector(
             add("-l")
             add(scriptFile.absolutePath)
         }
-
-        logger.debug { "Executing (attach): ${command.joinToString(" ")}" }
 
         val processBuilder = ProcessBuilder(command)
         processBuilder.redirectErrorStream(true)

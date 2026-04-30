@@ -10,6 +10,7 @@ import com.francisco.fridagpt.llm.PromptBuilder
 import com.francisco.fridagpt.models.ExecutionRecord
 import com.francisco.fridagpt.models.MethodInfo
 import com.francisco.fridagpt.utils.LogcatCapture
+import com.francisco.fridagpt.utils.Spinner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -38,9 +39,9 @@ class FridaLLMTool : CliktCommand() {
         help = "Device ID (optional, uses USB by default)"
     )
 
-    private val output by option(
-        "-o", "--output",
-        help = "Output file for context JSON"
+    private val saveContext by option(
+        "-o", "--save-context",
+        help = "Save collected app context to JSON file"
     )
 
     private val interactive by option(
@@ -309,8 +310,9 @@ class FridaLLMTool : CliktCommand() {
             return
         }
 
-        println("\n🤖 Generating Frida script with Claude...")
-        val generated = llmClient.generateScript(prompt)
+        val generated = Spinner.withSpinner("\n🤖 Generating Frida script with Claude...") {
+            llmClient.generateScript(prompt, maxTokens = 8192)
+        }
 
         if (generated == null) {
             println("❌ Failed to generate script")
@@ -324,12 +326,6 @@ class FridaLLMTool : CliktCommand() {
             File("$path/test.js").writeText(generated.script)
             println("💾 Script saved to: $path")
         }
-
-        // Mostrar script
-        println("\n📜 Generated Script:")
-        println("━".repeat(50))
-        println(generated.script)
-        println("━".repeat(50))
 
         // Validar
         val validation = executor.validateScript(generated.script)
@@ -367,17 +363,6 @@ class FridaLLMTool : CliktCommand() {
         if (context == null) {
             println("❌ Failed to collect context")
             return
-        }
-
-        // Mostrar estatísticas
-        collector.printStats(context)
-
-        // Salvar JSON se especificado
-        output?.let { path ->
-            val jsonStr = Json { prettyPrint = true }.encodeToString(context)
-
-            File(path).writeText(jsonStr)
-            logger.info { "Context saved to: $path" }
         }
 
         val relevantClasses =
@@ -448,8 +433,9 @@ class FridaLLMTool : CliktCommand() {
             return
         }
 
-        println("\n🤖 Generating Frida script with Claude...")
-        val generated = llmClient.generateScript(prompt, maxTokens = 8192)
+        val generated = Spinner.withSpinner("\n🤖 Generating Frida script with Claude...") {
+            llmClient.generateScript(prompt, maxTokens = 8192)
+        }
 
         if (generated == null) {
             println("❌ Failed to generate script")
@@ -467,12 +453,6 @@ class FridaLLMTool : CliktCommand() {
             File("$path/test.js").writeText(generated.script)
             println("💾 Script saved to: $path")
         }
-
-        // Mostrar script
-        println("\n📜 Generated Script:")
-        println("━".repeat(50))
-        println(generated.script)
-        println("━".repeat(50))
 
         // Validar
         val validation = executor.validateScript(generated.script)
@@ -563,7 +543,13 @@ class FridaLLMTool : CliktCommand() {
             return
         }
 
-        collector.printStats(context)
+        // Salvar JSON se especificado
+        saveContext?.let { path ->
+            val jsonStr = Json { prettyPrint = true }.encodeToString(context)
+
+            File("$path/context.json").writeText(jsonStr)
+            logger.info { "Context saved to: $path" }
+        }
 
         // Detecta se precisa de múltiplos hooks
         val separators = listOf(
@@ -595,8 +581,9 @@ class FridaLLMTool : CliktCommand() {
             return
         }
 
-        println("\n🤖 Generating Frida script with Claude...")
-        val generated = llmClient.generateScript(prompt, maxTokens = 8192)
+        val generated = Spinner.withSpinner("\n🤖 Generating Frida script with Claude...") {
+            llmClient.generateScript(prompt, maxTokens = 8192)
+        }
 
         if (generated == null) {
             println("❌ Failed to generate script")
@@ -610,12 +597,6 @@ class FridaLLMTool : CliktCommand() {
             File("$path/test.js").writeText(generated.script)
             println("💾 Script saved to: $path")
         }
-
-        // Mostrar script
-        println("\n📜 Generated Script:")
-        println("━".repeat(50))
-        println(generated.script)
-        println("━".repeat(50))
 
         // Validar
         val validation = executor.validateScript(generated.script)
@@ -679,17 +660,6 @@ class FridaLLMTool : CliktCommand() {
         if (context == null) {
             logger.error { "Failed to collect context" }
             return
-        }
-
-        // Mostrar estatísticas
-        collector.printStats(context)
-
-        // Salvar JSON se especificado
-        output?.let { path ->
-            val jsonStr = Json { prettyPrint = true }.encodeToString(context)
-
-            File(path).writeText(jsonStr)
-            logger.info { "Context saved to: $path" }
         }
 
         println()
@@ -792,12 +762,6 @@ class FridaLLMTool : CliktCommand() {
 
                         println("\n✅ Corrected script generated (${retryResult.generatedScript.tokensUsed} tokens)")
 
-                        // Mostrar script corrigido
-                        println("\n📜 Corrected Script (attempt ${retryResult.record.attemptNumber}):")
-                        println("━".repeat(50))
-                        println(retryResult.generatedScript.script)
-                        println("━".repeat(50))
-
                         // Mostrar resultado da execução
                         println(executor.formatOutput(retryResult.record.executionResult))
 
@@ -807,7 +771,7 @@ class FridaLLMTool : CliktCommand() {
                             println("💾 Corrected script saved to: $path")
                         }
 
-                        println("\n💡 Use '/retry <feedback>' to correct again, or submit a new query.")
+                        println("\n💡 Use '/retry <feedback>' to correct again, or submit a new query.\n")
                     } catch (e: Exception) {
                         println("❌ Retry error: ${e.message}")
                         logger.error(e) { "Retry execution error" }
