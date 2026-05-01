@@ -1,109 +1,168 @@
 Java.perform(function() {
-    console.log("[+] Starting SSL/TLS certificate validation interception");
+    console.log("[+] Starting SSL Certificate Validation Interception");
     
-    // Hook the custom TrustManager implementation
+    // Hook the custom TrustManager in the app
     try {
         var MyTrustManager = Java.use("edu.ksu.cs.benign.MyTrustManager");
         
         MyTrustManager.checkServerTrusted.implementation = function(chain, authType) {
-            console.log("[!] MyTrustManager.checkServerTrusted() called");
-            console.log("[*] Certificate chain length: " + chain.length);
-            console.log("[*] Auth type: " + authType);
+            console.log("[+] MyTrustManager.checkServerTrusted called");
+            console.log("    Auth Type: " + authType);
+            console.log("    Certificate Chain Length: " + chain.length);
             
-            // Log certificate details
             for (var i = 0; i < chain.length; i++) {
-                var cert = chain[i];
-                console.log("[*] Certificate " + i + ":");
-                console.log("    Subject: " + cert.getSubjectDN());
-                console.log("    Issuer: " + cert.getIssuerDN());
-                console.log("    Serial: " + cert.getSerialNumber());
+                console.log("    Certificate " + i + ":");
+                console.log("      Subject: " + chain[i].getSubjectDN().toString());
+                console.log("      Issuer: " + chain[i].getIssuerDN().toString());
+                console.log("      Serial: " + chain[i].getSerialNumber().toString());
             }
             
-            // Check if the original method would throw an exception
+            // Call original implementation to see if it throws or accepts
             try {
-                this.checkServerTrusted.call(this, chain, authType);
-                console.log("[+] Certificate validation PASSED - App properly validates certificates");
+                var originalMethod = this.checkServerTrusted;
+                originalMethod.call(this, chain, authType);
+                console.log("[+] Custom TrustManager: Certificate validation PASSED");
             } catch (e) {
-                console.log("[!] Certificate validation FAILED - App detected invalid certificate: " + e);
+                console.log("[!] Custom TrustManager: Certificate validation FAILED - " + e.toString());
+                console.log("[!] This indicates CERTIFICATE PINNING is implemented");
+                throw e;
+            }
+        };
+        
+        MyTrustManager.checkClientTrusted.implementation = function(chain, authType) {
+            console.log("[+] MyTrustManager.checkClientTrusted called");
+            console.log("    Auth Type: " + authType);
+            
+            try {
+                var originalMethod = this.checkClientTrusted;
+                originalMethod.call(this, chain, authType);
+                console.log("[+] Custom TrustManager: Client certificate validation PASSED");
+            } catch (e) {
+                console.log("[!] Custom TrustManager: Client certificate validation FAILED - " + e.toString());
                 throw e;
             }
         };
         
         MyTrustManager.getAcceptedIssuers.implementation = function() {
-            var result = this.getAcceptedIssuers.call(this);
-            console.log("[*] MyTrustManager.getAcceptedIssuers() called - returned " + (result ? result.length : 0) + " issuers");
+            console.log("[+] MyTrustManager.getAcceptedIssuers called");
+            var result = this.getAcceptedIssuers();
+            console.log("    Accepted Issuers Count: " + result.length);
             return result;
         };
         
-        console.log("[+] Hooked MyTrustManager methods");
+        console.log("[+] Hooked custom MyTrustManager");
     } catch (e) {
-        console.log("[!] Failed to hook MyTrustManager: " + e);
+        console.log("[-] Failed to hook MyTrustManager: " + e.toString());
     }
     
-    // Hook standard Android TrustManager implementations
+    // Hook SSLContext initialization with correct overload
     try {
-        var X509TrustManager = Java.use("javax.net.ssl.X509TrustManager");
-        var TrustManagerImpl = Java.use("com.android.org.conscrypt.TrustManagerImpl");
+        var SSLContext = Java.use("javax.net.ssl.SSLContext");
         
-        TrustManagerImpl.checkServerTrusted.overload('[Ljava.security.cert.X509Certificate;', 'java.lang.String', 'java.lang.String').implementation = function(chain, authType, host) {
-            console.log("[!] TrustManagerImpl.checkServerTrusted() called");
-            console.log("[*] Host: " + host);
-            console.log("[*] Auth type: " + authType);
-            console.log("[*] Certificate chain length: " + chain.length);
+        SSLContext.init.overload('[Ljavax.net.ssl.KeyManager;', '[Ljavax.net.ssl.TrustManager;', 'java.security.SecureRandom').implementation = function(keyManagers, trustManagers, secureRandom) {
+            console.log("[+] SSLContext.init called");
+            console.log("    Key Managers: " + (keyManagers ? keyManagers.length : "null"));
+            console.log("    Trust Managers: " + (trustManagers ? trustManagers.length : "null"));
+            
+            if (trustManagers) {
+                for (var i = 0; i < trustManagers.length; i++) {
+                    console.log("    TrustManager " + i + ": " + trustManagers[i].getClass().getName());
+                    if (trustManagers[i].getClass().getName() === "edu.ksu.cs.benign.MyTrustManager") {
+                        console.log("[!] CUSTOM TRUST MANAGER DETECTED - This app implements certificate pinning");
+                    }
+                }
+            }
+            
+            this.init(keyManagers, trustManagers, secureRandom);
+        };
+        
+        console.log("[+] Hooked SSLContext.init");
+    } catch (e) {
+        console.log("[-] Failed to hook SSLContext: " + e.toString());
+    }
+    
+    // Hook the anonymous HostnameVerifier from MyIntentService$1
+    try {
+        var AnonymousHostnameVerifier = Java.use("edu.ksu.cs.benign.MyIntentService$1");
+        
+        AnonymousHostnameVerifier.verify.implementation = function(hostname, session) {
+            console.log("[+] Anonymous HostnameVerifier.verify called");
+            console.log("    Hostname: " + hostname);
+            console.log("    SSL Session: " + session.toString());
+            
+            var result = this.verify(hostname, session);
+            console.log("    Verification result: " + result);
+            if (result === false) {
+                console.log("[!] Custom hostname verification FAILED - This may indicate additional SSL security");
+            }
+            return result;
+        };
+        
+        console.log("[+] Hooked anonymous HostnameVerifier");
+    } catch (e) {
+        console.log("[-] Failed to hook anonymous HostnameVerifier: " + e.toString());
+    }
+    
+    // Hook HttpsURLConnection to detect HTTPS connections
+    try {
+        var HttpsURLConnection = Java.use("javax.net.ssl.HttpsURLConnection");
+        
+        HttpsURLConnection.setHostnameVerifier.implementation = function(hostnameVerifier) {
+            console.log("[+] HttpsURLConnection.setHostnameVerifier called");
+            console.log("    Hostname Verifier: " + hostnameVerifier.getClass().getName());
+            if (hostnameVerifier.getClass().getName().contains("MyIntentService")) {
+                console.log("[!] CUSTOM HOSTNAME VERIFIER DETECTED - App implements custom SSL verification");
+            }
+            this.setHostnameVerifier(hostnameVerifier);
+        };
+        
+        console.log("[+] Hooked HttpsURLConnection hostname verification");
+    } catch (e) {
+        console.log("[-] Failed to hook HttpsURLConnection: " + e.toString());
+    }
+    
+    // Hook MyIntentService to monitor HTTPS requests
+    try {
+        var MyIntentService = Java.use("edu.ksu.cs.benign.MyIntentService");
+        
+        MyIntentService.onHandleIntent.implementation = function(intent) {
+            console.log("[+] MyIntentService.onHandleIntent called");
+            console.log("    Intent: " + intent.toString());
+            console.log("[+] This service likely performs HTTPS requests with custom SSL validation");
             
             try {
-                this.checkServerTrusted.overload('[Ljava.security.cert.X509Certificate;', 'java.lang.String', 'java.lang.String').call(this, chain, authType, host);
-                console.log("[+] System certificate validation PASSED");
+                this.onHandleIntent(intent);
+                console.log("[+] MyIntentService completed successfully");
             } catch (e) {
-                console.log("[!] System certificate validation FAILED: " + e);
+                console.log("[!] MyIntentService failed: " + e.toString());
+                if (e.toString().contains("SSLContext") || e.toString().contains("certificate")) {
+                    console.log("[!] SSL/Certificate related error - Certificate pinning may be enforced");
+                }
                 throw e;
             }
         };
         
-        console.log("[+] Hooked TrustManagerImpl");
+        console.log("[+] Hooked MyIntentService.onHandleIntent");
     } catch (e) {
-        console.log("[!] Failed to hook TrustManagerImpl: " + e);
+        console.log("[-] Failed to hook MyIntentService: " + e.toString());
     }
     
-    // Hook SSLContext initialization to detect trust manager usage
+    // Monitor CertificateException for pinning detection
     try {
-        var SSLContext = Java.use("javax.net.ssl.SSLContext");
+        var CertificateException = Java.use("java.security.cert.CertificateException");
         
-        SSLContext.init.implementation = function(keyManagers, trustManagers, secureRandom) {
-            console.log("[!] SSLContext.init() called");
-            
-            if (trustManagers != null) {
-                console.log("[*] TrustManagers array length: " + trustManagers.length);
-                for (var i = 0; i < trustManagers.length; i++) {
-                    console.log("[*] TrustManager[" + i + "]: " + trustManagers[i].getClass().getName());
-                }
-            } else {
-                console.log("[!] WARNING: No TrustManagers provided - using default!");
-            }
-            
-            this.init.call(this, keyManagers, trustManagers, secureRandom);
+        CertificateException.$init.overload('java.lang.String').implementation = function(message) {
+            console.log("[!] CertificateException created with message: " + message);
+            console.log("[!] CERTIFICATE PINNING ENFORCEMENT DETECTED");
+            return this.$init(message);
         };
         
-        console.log("[+] Hooked SSLContext.init()");
+        console.log("[+] Hooked CertificateException constructor");
     } catch (e) {
-        console.log("[!] Failed to hook SSLContext: " + e);
+        console.log("[-] Failed to hook CertificateException: " + e.toString());
     }
     
-    // Hook HttpsURLConnection to monitor certificate verification
-    try {
-        var HttpsURLConnection = Java.use("javax.net.ssl.HttpsURLConnection");
-        
-        HttpsURLConnection.setDefaultHostnameVerifier.implementation = function(hostnameVerifier) {
-            console.log("[!] HttpsURLConnection.setDefaultHostnameVerifier() called");
-            console.log("[*] HostnameVerifier: " + hostnameVerifier.getClass().getName());
-            
-            this.setDefaultHostnameVerifier.call(this, hostnameVerifier);
-        };
-        
-        console.log("[+] Hooked HttpsURLConnection");
-    } catch (e) {
-        console.log("[!] Failed to hook HttpsURLConnection: " + e);
-    }
-    
-    console.log("[+] SSL/TLS certificate validation hooks installed");
+    console.log("[+] SSL Certificate Validation hooks installed");
+    console.log("[+] Monitor for custom TrustManager and HostnameVerifier usage");
+    console.log("[+] Certificate validation failures will indicate pinning implementation");
 });

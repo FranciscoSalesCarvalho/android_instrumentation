@@ -25,7 +25,7 @@ class ManifestCollector(
         logger.info { "Collecting manifest info..." }
 
         val script = ScriptLoader.load("frida-scripts/collectors/manifest.js")
-        val rawOutput = connector.executeScript(script) ?: return null
+        val rawOutput = connector.executeCollectorScript(script) ?: return null
 
         return try {
             val jsonStart = rawOutput.indexOf('{')

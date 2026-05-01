@@ -97,7 +97,7 @@ class ScriptExecutor(
             scriptFile.writeText(script)
 
             // Executa script
-            val output = connector.executeScript2(script)
+            val output = connector.executeForResult(script)
 
             val executionTime = System.currentTimeMillis() - startTime
 

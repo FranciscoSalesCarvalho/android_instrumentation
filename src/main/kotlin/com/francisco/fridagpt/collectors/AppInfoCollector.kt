@@ -23,7 +23,7 @@ class AppInfoCollector(
         logger.info { "Collecting app info..." }
 
         val script = ScriptLoader.load("frida-scripts/collectors/app_info.js")
-        val rawOutput = connector.executeScript(script) ?: return null
+        val rawOutput = connector.executeCollectorScript(script) ?: return null
 
         return try {
             // Parseia JSON retornado pelo script Frida

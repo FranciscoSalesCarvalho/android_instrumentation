@@ -25,7 +25,7 @@ class LibraryDetector(
         logger.info { "Detecting libraries..." }
 
         val script = ScriptLoader.load("frida-scripts/collectors/libraries.js")
-        val rawOutput = connector.executeScript(script) ?: return emptyList()
+        val rawOutput = connector.executeCollectorScript(script) ?: return emptyList()
 
         return try {
             val jsonStart = rawOutput.indexOf('[')

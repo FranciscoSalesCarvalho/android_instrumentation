@@ -46,6 +46,16 @@
                     "signature": "copyInputStreamToString(java.io.InputStream):java.lang.String"
                 },
                 {
+                    "name": "result",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "result(java.lang.String):void"
+                },
+                {
                     "name": "onHandleIntent",
                     "returnType": "void",
                     "parameters": [

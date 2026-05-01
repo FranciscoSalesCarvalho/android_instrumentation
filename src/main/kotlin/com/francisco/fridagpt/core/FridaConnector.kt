@@ -54,7 +54,7 @@ class FridaConnector(
     /**
      * Executa script JavaScript via Frida
      */
-    suspend fun executeScript(scriptContent: String): String? = withContext(Dispatchers.IO) {
+    suspend fun executeCollectorScript(scriptContent: String): String? = withContext(Dispatchers.IO) {
         if (!isConnected) {
             logger.error { "Not connected! Call connect() first" }
             return@withContext null
@@ -66,7 +66,7 @@ class FridaConnector(
             scriptFile.writeText(scriptContent)
 
             // Executa via frida CLI
-            val command = buildFridaCommand(scriptFile.absolutePath)
+            val command = cmdForCollector(scriptFile.absolutePath)
 
             val processBuilder = ProcessBuilder(command)
             processBuilder.redirectErrorStream(true)
@@ -108,7 +108,7 @@ class FridaConnector(
         }
     }
 
-    suspend fun executeScript2(scriptContent: String): String? = withContext(Dispatchers.IO) {
+    suspend fun executeForResult(scriptContent: String): String? = withContext(Dispatchers.IO) {
         if (!isConnected) {
             logger.error { "Not connected! Call connect() first" }
             return@withContext null
@@ -120,7 +120,7 @@ class FridaConnector(
             scriptFile.writeText(scriptContent)
 
             // Executa via frida CLI
-            val command = buildFridaCommand2(scriptFile.absolutePath)
+            val command = cmdForResult(scriptFile.absolutePath)
 
             val processBuilder = ProcessBuilder(command)
             processBuilder.redirectErrorStream(true)
@@ -132,12 +132,20 @@ class FridaConnector(
             val reader = BufferedReader(InputStreamReader(proc.inputStream))
             val startTime = System.currentTimeMillis()
             val timeout = 30000L // 15 segundos
+            var scriptOutputStarted = false
 
             while (true) {
                 if (reader.ready()) {
                     val line = reader.readLine() ?: break
-                    output.appendLine(line)
-                    logger.debug { "Frida: $line" }
+
+                    if (!scriptOutputStarted && line.trimStart().startsWith("[")) {
+                        scriptOutputStarted = true
+                    }
+
+                    if (scriptOutputStarted) {
+                        output.appendLine(line)
+                        logger.debug { "Frida: $line" }
+                    }
                 }
 
                 // Verifica se processo terminou
@@ -244,7 +252,7 @@ class FridaConnector(
         }
     }
 
-    private fun buildFridaCommand(scriptPath: String): List<String> {
+    private fun cmdForCollector(scriptPath: String): List<String> {
         return buildList {
             add("frida")
             // Device selection
@@ -266,7 +274,7 @@ class FridaConnector(
         }
     }
 
-    private fun buildFridaCommand2(scriptPath: String): List<String> {
+    private fun cmdForResult(scriptPath: String): List<String> {
         return buildList {
             add("frida")
             if (port == FRIDA_SERVER_PORT && deviceId == null) {

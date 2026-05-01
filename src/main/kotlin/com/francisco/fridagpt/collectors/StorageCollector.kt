@@ -30,7 +30,7 @@ class StorageCollector(
         logger.info { "Collecting storage information..." }
 
         val script = ScriptLoader.load("frida-scripts/collectors/storage.js")
-        val rawOutput = connector.executeScript(script) ?: return null
+        val rawOutput = connector.executeCollectorScript(script) ?: return null
 
         return try {
             val jsonStart = rawOutput.indexOf('{')

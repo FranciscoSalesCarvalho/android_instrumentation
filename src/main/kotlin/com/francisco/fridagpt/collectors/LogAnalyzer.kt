@@ -23,7 +23,7 @@ class LogAnalyzer(
         logger.info { "Starting log analysis for ${durationSeconds}s..." }
 
         val script = ScriptLoader.load("frida-scripts/collectors/log.js")
-        val output = connector.executeScript(script) ?: return LogAnalysisResult(
+        val output = connector.executeCollectorScript(script) ?: return LogAnalysisResult(
             logs = emptyList(),
             sensitiveLogs = emptyList(),
             statistics = LogStatistics(0, 0, 0, 0)

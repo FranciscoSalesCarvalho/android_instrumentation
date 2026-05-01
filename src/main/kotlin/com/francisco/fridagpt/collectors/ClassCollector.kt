@@ -24,7 +24,7 @@ class ClassCollector(
         logger.info { "Collecting all classes..." }
 
         val script = ScriptLoader.load("frida-scripts/collectors/all_classes.js")
-        val rawOutput = connector.executeScript(script) ?: return emptyList()
+        val rawOutput = connector.executeCollectorScript(script) ?: return emptyList()
 
         return parseClassesOutput(rawOutput)
     }
@@ -36,7 +36,7 @@ class ClassCollector(
         logger.info { "Collecting app classes only..." }
 
         val script = ScriptLoader.load("frida-scripts/collectors/app_classes.js")
-        val rawOutput = connector.executeScript(script) ?: return emptyList()
+        val rawOutput = connector.executeCollectorScript(script) ?: return emptyList()
 
         return parseClassesOutput(rawOutput)
     }

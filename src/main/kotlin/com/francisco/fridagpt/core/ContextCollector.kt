@@ -105,7 +105,7 @@ class ContextCollector(
             });
         """.trimIndent()
 
-        val output = connector.executeScript(script) ?: return emptyList()
+        val output = connector.executeCollectorScript(script) ?: return emptyList()
 
         return try {
             val jsonStart = output.indexOf('[')
