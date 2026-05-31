@@ -118,7 +118,6 @@ class FridaLLMTool : CliktCommand() {
 
             // Inicializar componentes
             val router = QueryRouter()
-            val parser = QueryParser()
             val promptBuilder = PromptBuilder()
             val logcat = LogcatCapture(packageName, device)
             val executor = ScriptExecutor(
@@ -155,10 +154,8 @@ class FridaLLMTool : CliktCommand() {
                 logger.info { "Processing direct query: $userQuery" }
                 processQuery(
                     query = userQuery,
-                    connector = connector,
                     collector = collector,
                     router = router,
-                    parser = parser,
                     promptBuilder = promptBuilder,
                     llmClient = llmClient,
                     executor = executor,
@@ -178,7 +175,6 @@ class FridaLLMTool : CliktCommand() {
                 runInteractiveMode(
                     connector = connector,
                     router = router,
-                    parser = parser,
                     collector = collector,
                     promptBuilder = promptBuilder,
                     llmClient = llmClient,
@@ -194,10 +190,8 @@ class FridaLLMTool : CliktCommand() {
 
     private suspend fun processQuery(
         query: String,
-        connector: FridaConnector,
         collector: ContextCollector,
         router: QueryRouter,
-        parser: QueryParser,
         promptBuilder: PromptBuilder,
         llmClient: LLMClient?,
         executor: ScriptExecutor,
@@ -220,7 +214,6 @@ class FridaLLMTool : CliktCommand() {
                 println("\n✅ Specific query detected - Fast path!")
                 handleNormalBypass(
                     query = query,
-                    parser = parser,
                     promptBuilder = promptBuilder,
                     llmClient = llmClient,
                     executor = executor
@@ -260,48 +253,12 @@ class FridaLLMTool : CliktCommand() {
      */
     private suspend fun handleNormalBypass(
         query: String,
-        parser: QueryParser,
         promptBuilder: PromptBuilder,
         llmClient: LLMClient?,
         executor: ScriptExecutor
     ) {
-        val multiHook = parser.parseMultiHook(query)
-
-        if (multiHook == null || multiHook.hooks.isEmpty()) {
-            println("❌ Could not parse query")
-            println("Expected format: 'hook com.example.Class.method() return false'")
-            println("\nFor multiple hooks use:")
-            println("  hook Class1.method1() return false AND hook Class2.method2() return false")
-            println("  hook Class1.method1() return false, hook Class2.method2() return false")
-            return
-        }
-
-        if (multiHook.hooks.size == 1) {
-            // Single hook
-            val parsed = multiHook.hooks.first()
-            println("\n📋 Parsed Information:")
-            println("   Class: ${parsed.className}")
-            println("   Method: ${parsed.methodName}")
-            println("   Action: ${parsed.action}")
-            parsed.returnValue?.let { println("   Return: $it") }
-        } else {
-            // Multiple hooks
-            println("\n📋 Parsed Multi-Hook Query (${multiHook.hooks.size} hooks):")
-            multiHook.hooks.forEachIndexed { index, hook ->
-                println("\n   Hook ${index + 1}:")
-                println("     Class: ${hook.className}")
-                println("     Method: ${hook.methodName}")
-                println("     Action: ${hook.action}")
-                hook.returnValue?.let { println("     Return: $it") }
-            }
-        }
-
         // Gerar prompt
-        val prompt = if (multiHook.hooks.size == 1) {
-            promptBuilder.buildSpecificPrompt(multiHook.hooks.first())
-        } else {
-            promptBuilder.buildMultiHookPrompt(multiHook)
-        }
+        val prompt = promptBuilder.buildSpecificPrompt(query)
 
         if (llmClient == null) {
             println("\n📝 Prompt that would be sent:")
@@ -353,10 +310,6 @@ class FridaLLMTool : CliktCommand() {
         llmClient: LLMClient?,
         executor: ScriptExecutor
     ) {
-        println("\n🔍 Extracting hints from query...")
-        val hints = extractQueryHints(query)
-        println("Keywords: ${hints.joinToString(", ")}")
-
         println("\n📊 Collecting context...")
         val context = collector.collectBasicContext()
 
@@ -369,61 +322,24 @@ class FridaLLMTool : CliktCommand() {
             context.classes.filter { !it.name.contains("$") && !it.name.contains("kt", ignoreCase = true) }
 
         println("\n✅ Found ${relevantClasses.size} relevant classes:")
-        relevantClasses.take(10).forEach {
+        relevantClasses.forEach {
             println("   - ${it.name}")
-        }
-
-        // Detecta se precisa de múltiplos hooks
-        val separators = listOf(
-            " AND " to Regex("""\s+AND\s+""", RegexOption.IGNORE_CASE),
-            " OR " to Regex("""\s+OR\s+""", RegexOption.IGNORE_CASE),
-            "\n" to Regex("""\n+""")
-        )
-
-        var needsMultiHooks = false
-        for ((_, regex) in separators) {
-            if (regex.containsMatchIn(query)) {
-                needsMultiHooks = true
-                break
-            }
-        }
-
-        if (needsMultiHooks) {
-            println("\n🎯 Multi-hook scenario detected!")
-            println("   Will collect ALL related methods for comprehensive hooking")
         }
 
         // Coletar métodos das classes relevantes
         println("\n🔄 Collecting methods from relevant classes...")
-        val classesWithMethods = relevantClasses.take(if (needsMultiHooks) 10 else 5).map { classInfo ->
+        val classesWithMethods = relevantClasses.map { classInfo ->
             val methods = collector.collectMethodsForClass(classInfo.name)
 
-            // Filtra métodos relacionados se necessário
-            val filteredMethods = if (needsMultiHooks) {
-                filterRelatedMethods(methods, hints)
-            } else {
-                methods
-            }.filter { !it.name.contains("$") }
-
-            println("   ${classInfo.name}: ${filteredMethods.size} methods")
-            classInfo.copy(methods = filteredMethods)
-        }
-
-        val totalMethods = classesWithMethods.sumOf { it.methods.size }
-
-        if (needsMultiHooks) {
-            println("\n📦 Multi-hook preparation:")
-            println("   • ${classesWithMethods.size} classes")
-            println("   • $totalMethods methods to hook")
-            println("   • Will generate comprehensive bypass script")
+            println("${classInfo.name}: ${methods.size} methods")
+            classInfo.copy(methods = methods)
         }
 
         // Gerar prompt
         val prompt = promptBuilder.buildContextualPrompt(
             query = query,
             relevantClasses = classesWithMethods,
-            context = context,
-            needsMultipleHooks = needsMultiHooks
+            context = context
         )
 
         if (llmClient == null) {
@@ -443,10 +359,6 @@ class FridaLLMTool : CliktCommand() {
         }
 
         println("\n✅ Script generated (${generated.tokensUsed} tokens used)")
-
-        // Analisa quantos hooks foram gerados
-        val hooksCount = countHooksInScript(generated.script)
-        println("   📍 Detected $hooksCount hook(s) in generated script")
 
         // Salvar se solicitado
         saveScript?.let { path ->
@@ -468,60 +380,7 @@ class FridaLLMTool : CliktCommand() {
             println("\n🚀 Executing script...")
             val result = executor.execute(generated.script, durationSeconds = 15)
             println(executor.formatOutput(result))
-
-            // Sumário de execução para múltiplos hooks
-            if (needsMultiHooks && result.success) {
-                println("\n📊 Multi-hook Execution Summary:")
-                println("   ✓ Expected hooks: $totalMethods")
-                println("   ✓ Script executed successfully")
-                println("   💡 Check output above for individual hook status")
-            }
-        } else {
-            println("\n ℹ️  Dry-run mode - script not executed")
-            if (needsMultiHooks) {
-                println("   💡 This script would hook $totalMethods methods")
-            }
         }
-    }
-
-    private fun extractQueryHints(query: String): List<String> {
-        val words = query
-            .split(Regex("\\s+"))
-            .filter { it.length > 3 }
-            .filterNot { it in listOf("hook", "bypass", "method", "class", "return", "from", "with", "and", "the") }
-
-        return words.distinct()
-    }
-
-    /**
-     * Filtra métodos relacionados baseado em keywords
-     */
-    private fun filterRelatedMethods(
-        methods: List<MethodInfo>,
-        keywords: List<String>
-    ): List<MethodInfo> {
-        val filtered = methods.filter { method ->
-            keywords.any { keyword ->
-                method.name.contains(keyword, ignoreCase = true) ||
-                        method.returnType.contains(keyword, ignoreCase = true)
-            }
-        }
-
-        // Se filtrou muito, retorna os principais
-        return if (filtered.size >= 3) filtered else methods.take(10)
-    }
-
-    /**
-     * Conta quantos hooks existem no script gerado
-     */
-    private fun countHooksInScript(script: String): Int {
-        // Conta padrões de hook: ".implementation = "
-        val implementationCount = script.split(".implementation").size - 1
-
-        // Conta padrões alternativos: ".overload"
-        val overloadCount = script.split(".overload").size - 1
-
-        return maxOf(implementationCount, overloadCount, 1)
     }
 
     private suspend fun handleGenericQuery(
@@ -551,27 +410,11 @@ class FridaLLMTool : CliktCommand() {
             logger.info { "Context saved to: $path" }
         }
 
-        // Detecta se precisa de múltiplos hooks
-        val separators = listOf(
-            " AND " to Regex("""\s+AND\s+""", RegexOption.IGNORE_CASE),
-            " OR " to Regex("""\s+OR\s+""", RegexOption.IGNORE_CASE),
-            "\n" to Regex("""\n+""")
-        )
-
-        var needsMultiHooks = false
-        for ((_, regex) in separators) {
-            if (regex.containsMatchIn(query)) {
-                needsMultiHooks = true
-                break
-            }
-        }
-
         // Gerar prompt
         val prompt = promptBuilder.buildGenericPrompt(
             query = query,
             context = context,
-            stacktrace = stacktraceContent,
-            needsMultipleHooks = needsMultiHooks,
+            stacktrace = stacktraceContent
         )
 
         if (llmClient == null) {
@@ -634,7 +477,6 @@ class FridaLLMTool : CliktCommand() {
     private suspend fun runInteractiveMode(
         connector: FridaConnector,
         router: QueryRouter,
-        parser: QueryParser,
         collector: ContextCollector,
         promptBuilder: PromptBuilder,
         llmClient: LLMClient?,
@@ -789,10 +631,8 @@ class FridaLLMTool : CliktCommand() {
                     } else {
                         processQuery(
                             query = input,
-                            connector = connector,
                             collector = collector,
                             router = router,
-                            parser = parser,
                             promptBuilder = promptBuilder,
                             llmClient = llmClient,
                             executor = executor,

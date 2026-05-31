@@ -232,37 +232,6 @@ class ContextCollector(
     }
 
     /**
-     * Filtra classes relevantes baseado em keywords
-     */
-    private fun filterRelevantClasses(classes: List<ClassInfo>, keywords: List<String>): List<ClassInfo> {
-        // Priorização inteligente
-        val priorityClasses = mutableListOf<ClassInfo>()
-
-        // MÉDIA PRIORIDADE: Match com keywords
-        val matcher = SimilarityMatcher(threshold = 0.3)
-        val relevantClasses = matcher.filterClassInfos(classes, keywords).map { it.classInfo }
-
-        for (classInfo in classes) {
-            val className = classInfo.name.lowercase()
-
-            // ALTA PRIORIDADE: Application class
-            if (className.endsWith("application") && !className.startsWith("android.")) {
-                priorityClasses.add(classInfo)
-                continue
-            }
-
-            // ALTA PRIORIDADE: MainActivity
-            if (className.contains("mainactivity")) {
-                priorityClasses.add(classInfo)
-                continue
-            }
-        }
-
-        // Combina priorizando Application e MainActivity
-        return (priorityClasses + relevantClasses).distinct().take(10)
-    }
-
-    /**
      * Detecta se query precisa de múltiplos métodos
      */
     private fun detectMultipleMethodsNeed(query: String): Boolean {

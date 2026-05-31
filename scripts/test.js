@@ -1,168 +1,185 @@
 Java.perform(function() {
-    console.log("[+] Starting SSL Certificate Validation Interception");
+    console.log("[*] Starting WebView security monitoring...");
     
-    // Hook the custom TrustManager in the app
     try {
-        var MyTrustManager = Java.use("edu.ksu.cs.benign.MyTrustManager");
+        // Hook WebView.loadUrl to detect insecure HTTP URLs
+        var WebView = Java.use("android.webkit.WebView");
         
-        MyTrustManager.checkServerTrusted.implementation = function(chain, authType) {
-            console.log("[+] MyTrustManager.checkServerTrusted called");
-            console.log("    Auth Type: " + authType);
-            console.log("    Certificate Chain Length: " + chain.length);
+        WebView.loadUrl.overload('java.lang.String').implementation = function(url) {
+            console.log("[WebView] Loading URL: " + url);
             
-            for (var i = 0; i < chain.length; i++) {
-                console.log("    Certificate " + i + ":");
-                console.log("      Subject: " + chain[i].getSubjectDN().toString());
-                console.log("      Issuer: " + chain[i].getIssuerDN().toString());
-                console.log("      Serial: " + chain[i].getSerialNumber().toString());
+            if (url.startsWith("http://")) {
+                console.log("[!] SECURITY WARNING: Insecure HTTP URL detected: " + url);
+            } else if (url.startsWith("https://")) {
+                console.log("[+] Secure HTTPS URL: " + url);
+            } else if (url.startsWith("javascript:")) {
+                console.log("[!] SECURITY WARNING: JavaScript URL scheme detected: " + url);
+            } else if (url.startsWith("data:")) {
+                console.log("[!] SECURITY WARNING: Data URL scheme detected: " + url);
             }
             
-            // Call original implementation to see if it throws or accepts
-            try {
-                var originalMethod = this.checkServerTrusted;
-                originalMethod.call(this, chain, authType);
-                console.log("[+] Custom TrustManager: Certificate validation PASSED");
-            } catch (e) {
-                console.log("[!] Custom TrustManager: Certificate validation FAILED - " + e.toString());
-                console.log("[!] This indicates CERTIFICATE PINNING is implemented");
-                throw e;
-            }
+            return this.loadUrl(url);
         };
         
-        MyTrustManager.checkClientTrusted.implementation = function(chain, authType) {
-            console.log("[+] MyTrustManager.checkClientTrusted called");
-            console.log("    Auth Type: " + authType);
+        // Hook WebView.loadUrl with headers
+        WebView.loadUrl.overload('java.lang.String', 'java.util.Map').implementation = function(url, additionalHttpHeaders) {
+            console.log("[WebView] Loading URL with headers: " + url);
             
-            try {
-                var originalMethod = this.checkClientTrusted;
-                originalMethod.call(this, chain, authType);
-                console.log("[+] Custom TrustManager: Client certificate validation PASSED");
-            } catch (e) {
-                console.log("[!] Custom TrustManager: Client certificate validation FAILED - " + e.toString());
-                throw e;
+            if (url.startsWith("http://")) {
+                console.log("[!] SECURITY WARNING: Insecure HTTP URL detected: " + url);
             }
-        };
-        
-        MyTrustManager.getAcceptedIssuers.implementation = function() {
-            console.log("[+] MyTrustManager.getAcceptedIssuers called");
-            var result = this.getAcceptedIssuers();
-            console.log("    Accepted Issuers Count: " + result.length);
-            return result;
-        };
-        
-        console.log("[+] Hooked custom MyTrustManager");
-    } catch (e) {
-        console.log("[-] Failed to hook MyTrustManager: " + e.toString());
-    }
-    
-    // Hook SSLContext initialization with correct overload
-    try {
-        var SSLContext = Java.use("javax.net.ssl.SSLContext");
-        
-        SSLContext.init.overload('[Ljavax.net.ssl.KeyManager;', '[Ljavax.net.ssl.TrustManager;', 'java.security.SecureRandom').implementation = function(keyManagers, trustManagers, secureRandom) {
-            console.log("[+] SSLContext.init called");
-            console.log("    Key Managers: " + (keyManagers ? keyManagers.length : "null"));
-            console.log("    Trust Managers: " + (trustManagers ? trustManagers.length : "null"));
             
-            if (trustManagers) {
-                for (var i = 0; i < trustManagers.length; i++) {
-                    console.log("    TrustManager " + i + ": " + trustManagers[i].getClass().getName());
-                    if (trustManagers[i].getClass().getName() === "edu.ksu.cs.benign.MyTrustManager") {
-                        console.log("[!] CUSTOM TRUST MANAGER DETECTED - This app implements certificate pinning");
-                    }
+            if (additionalHttpHeaders) {
+                var headersMap = Java.cast(additionalHttpHeaders, Java.use("java.util.HashMap"));
+                var entrySet = headersMap.entrySet();
+                var iterator = entrySet.iterator();
+                console.log("[WebView] Additional headers:");
+                while (iterator.hasNext()) {
+                    var entry = iterator.next();
+                    console.log("  " + entry.getKey() + ": " + entry.getValue());
                 }
             }
             
-            this.init(keyManagers, trustManagers, secureRandom);
+            return this.loadUrl(url, additionalHttpHeaders);
         };
         
-        console.log("[+] Hooked SSLContext.init");
-    } catch (e) {
-        console.log("[-] Failed to hook SSLContext: " + e.toString());
-    }
-    
-    // Hook the anonymous HostnameVerifier from MyIntentService$1
-    try {
-        var AnonymousHostnameVerifier = Java.use("edu.ksu.cs.benign.MyIntentService$1");
-        
-        AnonymousHostnameVerifier.verify.implementation = function(hostname, session) {
-            console.log("[+] Anonymous HostnameVerifier.verify called");
-            console.log("    Hostname: " + hostname);
-            console.log("    SSL Session: " + session.toString());
+        // Hook WebView.loadData to detect insecure content
+        WebView.loadData.implementation = function(data, mimeType, encoding) {
+            console.log("[WebView] Loading data with MIME type: " + mimeType);
             
-            var result = this.verify(hostname, session);
-            console.log("    Verification result: " + result);
-            if (result === false) {
-                console.log("[!] Custom hostname verification FAILED - This may indicate additional SSL security");
+            if (data && data.length > 100) {
+                console.log("[WebView] Data snippet: " + data.substring(0, 100) + "...");
+            } else {
+                console.log("[WebView] Data: " + data);
             }
-            return result;
-        };
-        
-        console.log("[+] Hooked anonymous HostnameVerifier");
-    } catch (e) {
-        console.log("[-] Failed to hook anonymous HostnameVerifier: " + e.toString());
-    }
-    
-    // Hook HttpsURLConnection to detect HTTPS connections
-    try {
-        var HttpsURLConnection = Java.use("javax.net.ssl.HttpsURLConnection");
-        
-        HttpsURLConnection.setHostnameVerifier.implementation = function(hostnameVerifier) {
-            console.log("[+] HttpsURLConnection.setHostnameVerifier called");
-            console.log("    Hostname Verifier: " + hostnameVerifier.getClass().getName());
-            if (hostnameVerifier.getClass().getName().contains("MyIntentService")) {
-                console.log("[!] CUSTOM HOSTNAME VERIFIER DETECTED - App implements custom SSL verification");
-            }
-            this.setHostnameVerifier(hostnameVerifier);
-        };
-        
-        console.log("[+] Hooked HttpsURLConnection hostname verification");
-    } catch (e) {
-        console.log("[-] Failed to hook HttpsURLConnection: " + e.toString());
-    }
-    
-    // Hook MyIntentService to monitor HTTPS requests
-    try {
-        var MyIntentService = Java.use("edu.ksu.cs.benign.MyIntentService");
-        
-        MyIntentService.onHandleIntent.implementation = function(intent) {
-            console.log("[+] MyIntentService.onHandleIntent called");
-            console.log("    Intent: " + intent.toString());
-            console.log("[+] This service likely performs HTTPS requests with custom SSL validation");
             
-            try {
-                this.onHandleIntent(intent);
-                console.log("[+] MyIntentService completed successfully");
-            } catch (e) {
-                console.log("[!] MyIntentService failed: " + e.toString());
-                if (e.toString().contains("SSLContext") || e.toString().contains("certificate")) {
-                    console.log("[!] SSL/Certificate related error - Certificate pinning may be enforced");
-                }
-                throw e;
+            // Check for JavaScript in the data
+            if (data && data.toLowerCase().includes("<script")) {
+                console.log("[!] SECURITY WARNING: JavaScript detected in loaded data");
             }
+            
+            return this.loadData(data, mimeType, encoding);
         };
         
-        console.log("[+] Hooked MyIntentService.onHandleIntent");
+        // Hook WebView.loadDataWithBaseURL
+        WebView.loadDataWithBaseURL.implementation = function(baseUrl, data, mimeType, encoding, historyUrl) {
+            console.log("[WebView] Loading data with base URL: " + baseUrl);
+            console.log("[WebView] History URL: " + historyUrl);
+            
+            if (baseUrl && baseUrl.startsWith("http://")) {
+                console.log("[!] SECURITY WARNING: Insecure HTTP base URL: " + baseUrl);
+            }
+            
+            if (data && data.toLowerCase().includes("<script")) {
+                console.log("[!] SECURITY WARNING: JavaScript detected in loaded data");
+            }
+            
+            return this.loadDataWithBaseURL(baseUrl, data, mimeType, encoding, historyUrl);
+        };
+        
     } catch (e) {
-        console.log("[-] Failed to hook MyIntentService: " + e.toString());
+        console.log("[-] Error hooking WebView methods: " + e.toString());
     }
     
-    // Monitor CertificateException for pinning detection
     try {
-        var CertificateException = Java.use("java.security.cert.CertificateException");
+        // Hook WebSettings to monitor JavaScript enablement
+        var WebSettings = Java.use("android.webkit.WebSettings");
         
-        CertificateException.$init.overload('java.lang.String').implementation = function(message) {
-            console.log("[!] CertificateException created with message: " + message);
-            console.log("[!] CERTIFICATE PINNING ENFORCEMENT DETECTED");
-            return this.$init(message);
+        WebSettings.setJavaScriptEnabled.implementation = function(flag) {
+            if (flag) {
+                console.log("[!] SECURITY WARNING: JavaScript enabled in WebView");
+            } else {
+                console.log("[+] JavaScript disabled in WebView");
+            }
+            return this.setJavaScriptEnabled(flag);
         };
         
-        console.log("[+] Hooked CertificateException constructor");
+        WebSettings.setAllowFileAccess.implementation = function(allow) {
+            if (allow) {
+                console.log("[!] SECURITY WARNING: File access enabled in WebView");
+            } else {
+                console.log("[+] File access disabled in WebView");
+            }
+            return this.setAllowFileAccess(allow);
+        };
+        
+        WebSettings.setAllowFileAccessFromFileURLs.implementation = function(flag) {
+            if (flag) {
+                console.log("[!] SECURITY WARNING: File access from file URLs enabled");
+            } else {
+                console.log("[+] File access from file URLs disabled");
+            }
+            return this.setAllowFileAccessFromFileURLs(flag);
+        };
+        
+        WebSettings.setAllowUniversalAccessFromFileURLs.implementation = function(flag) {
+            if (flag) {
+                console.log("[!] SECURITY WARNING: Universal access from file URLs enabled");
+            } else {
+                console.log("[+] Universal access from file URLs disabled");
+            }
+            return this.setAllowUniversalAccessFromFileURLs(flag);
+        };
+        
+        WebSettings.setMixedContentMode.implementation = function(mode) {
+            console.log("[WebView] Mixed content mode set to: " + mode);
+            if (mode == 2) { // MIXED_CONTENT_ALWAYS_ALLOW
+                console.log("[!] SECURITY WARNING: Mixed content always allowed");
+            }
+            return this.setMixedContentMode(mode);
+        };
+        
     } catch (e) {
-        console.log("[-] Failed to hook CertificateException: " + e.toString());
+        console.log("[-] Error hooking WebSettings methods: " + e.toString());
     }
     
-    console.log("[+] SSL Certificate Validation hooks installed");
-    console.log("[+] Monitor for custom TrustManager and HostnameVerifier usage");
-    console.log("[+] Certificate validation failures will indicate pinning implementation");
+    try {
+        // Hook WebViewClient methods to monitor resource loading
+        var WebViewClient = Java.use("android.webkit.WebViewClient");
+        
+        WebViewClient.shouldOverrideUrlLoading.overload('android.webkit.WebView', 'java.lang.String').implementation = function(view, url) {
+            console.log("[WebViewClient] Attempting to load URL: " + url);
+            
+            if (url.startsWith("http://")) {
+                console.log("[!] SECURITY WARNING: Insecure HTTP URL in shouldOverrideUrlLoading: " + url);
+            }
+            
+            return this.shouldOverrideUrlLoading(view, url);
+        };
+        
+        WebViewClient.onReceivedError.overload('android.webkit.WebView', 'int', 'java.lang.String', 'java.lang.String').implementation = function(view, errorCode, description, failingUrl) {
+            console.log("[WebViewClient] Error loading URL: " + failingUrl);
+            console.log("[WebViewClient] Error code: " + errorCode + ", description: " + description);
+            return this.onReceivedError(view, errorCode, description, failingUrl);
+        };
+        
+    } catch (e) {
+        console.log("[-] Error hooking WebViewClient methods: " + e.toString());
+    }
+    
+    try {
+        // Hook WebChromeClient to monitor JavaScript alerts and console messages
+        var WebChromeClient = Java.use("android.webkit.WebChromeClient");
+        
+        WebChromeClient.onJsAlert.implementation = function(view, url, message, result) {
+            console.log("[WebChromeClient] JavaScript Alert from " + url + ": " + message);
+            return this.onJsAlert(view, url, message, result);
+        };
+        
+        WebChromeClient.onConsoleMessage.overload('android.webkit.ConsoleMessage').implementation = function(consoleMessage) {
+            var messageLevel = consoleMessage.messageLevel().toString();
+            var message = consoleMessage.message();
+            var sourceId = consoleMessage.sourceId();
+            var lineNumber = consoleMessage.lineNumber();
+            
+            console.log("[WebChromeClient] Console " + messageLevel + " from " + sourceId + ":" + lineNumber + " - " + message);
+            
+            return this.onConsoleMessage(consoleMessage);
+        };
+        
+    } catch (e) {
+        console.log("[-] Error hooking WebChromeClient methods: " + e.toString());
+    }
+    
+    console.log("[*] WebView security monitoring hooks installed successfully");
 });

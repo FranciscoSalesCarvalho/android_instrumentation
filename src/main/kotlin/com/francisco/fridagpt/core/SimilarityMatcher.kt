@@ -111,11 +111,6 @@ class SimilarityMatcher(
     }
 }
 
-data class ScoredMatch(
-    val name: String,
-    val score: Double
-)
-
 data class ScoredClassInfo(
     val classInfo: ClassInfo,
     val score: Double

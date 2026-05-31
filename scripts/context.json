@@ -1,17 +1,54 @@
 {
     "appInfo": {
-        "packageName": "edu.ksu.cs.benign",
-        "targetSdk": 27,
-        "minSdk": 22,
+        "packageName": "com.android.insecurebankv2",
+        "targetSdk": 22,
+        "minSdk": 15,
         "isDebuggable": true,
-        "backupActive": false,
-        "dataDir": "/data/user/0/edu.ksu.cs.benign"
+        "backupActive": true,
+        "dataDir": "/data/user/0/com.android.insecurebankv2"
     },
     "classes": [
         {
-            "name": "edu.ksu.cs.benign.MainActivity",
-            "packageName": "edu.ksu.cs.benign",
+            "name": "com.android.insecurebankv2.PostLogin$1",
+            "packageName": "com.android.insecurebankv2",
             "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.LoginActivity",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "callPreferences",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "callPreferences():void"
+                },
+                {
+                    "name": "createUser",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "createUser():void"
+                },
+                {
+                    "name": "fillData",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "fillData():void"
+                },
                 {
                     "name": "onCreate",
                     "returnType": "void",
@@ -23,93 +60,669 @@
                     "signature": "onCreate(android.os.Bundle):void"
                 },
                 {
-                    "name": "onResume",
+                    "name": "onCreateOptionsMenu",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.Menu"
+                        }
+                    ],
+                    "signature": "onCreateOptionsMenu(android.view.Menu):boolean"
+                },
+                {
+                    "name": "onOptionsItemSelected",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.MenuItem"
+                        }
+                    ],
+                    "signature": "onOptionsItemSelected(android.view.MenuItem):boolean"
+                },
+                {
+                    "name": "performlogin",
                     "returnType": "void",
                     "parameters": [
                     ],
-                    "signature": "onResume():void"
+                    "signature": "performlogin():void"
                 }
             ]
         },
         {
-            "name": "edu.ksu.cs.benign.MyIntentService",
-            "packageName": "edu.ksu.cs.benign",
+            "name": "com.android.insecurebankv2.CryptoClass",
+            "packageName": "com.android.insecurebankv2",
             "methods": [
                 {
-                    "name": "copyInputStreamToString",
+                    "name": "aes256decrypt",
+                    "returnType": "[B",
+                    "parameters": [
+                        {
+                            "type": "[B"
+                        },
+                        {
+                            "type": "[B"
+                        },
+                        {
+                            "type": "[B"
+                        }
+                    ],
+                    "signature": "aes256decrypt([B,[B,[B):[B"
+                },
+                {
+                    "name": "aes256encrypt",
+                    "returnType": "[B",
+                    "parameters": [
+                        {
+                            "type": "[B"
+                        },
+                        {
+                            "type": "[B"
+                        },
+                        {
+                            "type": "[B"
+                        }
+                    ],
+                    "signature": "aes256encrypt([B,[B,[B):[B"
+                },
+                {
+                    "name": "aesDeccryptedString",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "aesDeccryptedString(java.lang.String):java.lang.String"
+                },
+                {
+                    "name": "aesEncryptedString",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "aesEncryptedString(java.lang.String):java.lang.String"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.PostLogin",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "doesSUexist",
+                    "returnType": "boolean",
+                    "parameters": [
+                    ],
+                    "signature": "doesSUexist():boolean"
+                },
+                {
+                    "name": "doesSuperuserApkExist",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "doesSuperuserApkExist(java.lang.String):boolean"
+                },
+                {
+                    "name": "callPreferences",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "callPreferences():void"
+                },
+                {
+                    "name": "changePasswd",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "changePasswd():void"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "onCreateOptionsMenu",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.Menu"
+                        }
+                    ],
+                    "signature": "onCreateOptionsMenu(android.view.Menu):boolean"
+                },
+                {
+                    "name": "onOptionsItemSelected",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.MenuItem"
+                        }
+                    ],
+                    "signature": "onOptionsItemSelected(android.view.MenuItem):boolean"
+                },
+                {
+                    "name": "showRootStatus",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "showRootStatus():void"
+                },
+                {
+                    "name": "viewStatment",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "viewStatment():void"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.PostLogin$2",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.WrongLogin",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "callPreferences",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "callPreferences():void"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "onCreateOptionsMenu",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.Menu"
+                        }
+                    ],
+                    "signature": "onCreateOptionsMenu(android.view.Menu):boolean"
+                },
+                {
+                    "name": "onOptionsItemSelected",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.MenuItem"
+                        }
+                    ],
+                    "signature": "onOptionsItemSelected(android.view.MenuItem):boolean"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.PostLogin$3",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.LoginActivity$1",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.DoLogin",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "callPreferences",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "callPreferences():void"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "onCreateOptionsMenu",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.Menu"
+                        }
+                    ],
+                    "signature": "onCreateOptionsMenu(android.view.Menu):boolean"
+                },
+                {
+                    "name": "onOptionsItemSelected",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.MenuItem"
+                        }
+                    ],
+                    "signature": "onOptionsItemSelected(android.view.MenuItem):boolean"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.ChangePassword",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "access$000",
+                    "returnType": "java.util.regex.Pattern",
+                    "parameters": [
+                        {
+                            "type": "com.android.insecurebankv2.ChangePassword"
+                        }
+                    ],
+                    "signature": "access$000(com.android.insecurebankv2.ChangePassword):java.util.regex.Pattern"
+                },
+                {
+                    "name": "access$002",
+                    "returnType": "java.util.regex.Pattern",
+                    "parameters": [
+                        {
+                            "type": "com.android.insecurebankv2.ChangePassword"
+                        },
+                        {
+                            "type": "java.util.regex.Pattern"
+                        }
+                    ],
+                    "signature": "access$002(com.android.insecurebankv2.ChangePassword,java.util.regex.Pattern):java.util.regex.Pattern"
+                },
+                {
+                    "name": "access$100",
+                    "returnType": "java.util.regex.Matcher",
+                    "parameters": [
+                        {
+                            "type": "com.android.insecurebankv2.ChangePassword"
+                        }
+                    ],
+                    "signature": "access$100(com.android.insecurebankv2.ChangePassword):java.util.regex.Matcher"
+                },
+                {
+                    "name": "access$102",
+                    "returnType": "java.util.regex.Matcher",
+                    "parameters": [
+                        {
+                            "type": "com.android.insecurebankv2.ChangePassword"
+                        },
+                        {
+                            "type": "java.util.regex.Matcher"
+                        }
+                    ],
+                    "signature": "access$102(com.android.insecurebankv2.ChangePassword,java.util.regex.Matcher):java.util.regex.Matcher"
+                },
+                {
+                    "name": "access$200",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "com.android.insecurebankv2.ChangePassword"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "access$200(com.android.insecurebankv2.ChangePassword,java.lang.String,java.lang.String):void"
+                },
+                {
+                    "name": "broadcastChangepasswordSMS",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "broadcastChangepasswordSMS(java.lang.String,java.lang.String):void"
+                },
+                {
+                    "name": "callPreferences",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "callPreferences():void"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "onCreateOptionsMenu",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.Menu"
+                        }
+                    ],
+                    "signature": "onCreateOptionsMenu(android.view.Menu):boolean"
+                },
+                {
+                    "name": "onOptionsItemSelected",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.MenuItem"
+                        }
+                    ],
+                    "signature": "onOptionsItemSelected(android.view.MenuItem):boolean"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.TrackUserContentProvider$DatabaseHelper",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.database.sqlite.SQLiteDatabase"
+                        }
+                    ],
+                    "signature": "onCreate(android.database.sqlite.SQLiteDatabase):void"
+                },
+                {
+                    "name": "onUpgrade",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.database.sqlite.SQLiteDatabase"
+                        },
+                        {
+                            "type": "int"
+                        },
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "onUpgrade(android.database.sqlite.SQLiteDatabase,int,int):void"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.TrackUserContentProvider",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "delete",
+                    "returnType": "int",
+                    "parameters": [
+                        {
+                            "type": "android.net.Uri"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        },
+                        {
+                            "type": "[Ljava.lang.String;"
+                        }
+                    ],
+                    "signature": "delete(android.net.Uri,java.lang.String,[Ljava.lang.String;):int"
+                },
+                {
+                    "name": "getType",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                        {
+                            "type": "android.net.Uri"
+                        }
+                    ],
+                    "signature": "getType(android.net.Uri):java.lang.String"
+                },
+                {
+                    "name": "insert",
+                    "returnType": "android.net.Uri",
+                    "parameters": [
+                        {
+                            "type": "android.net.Uri"
+                        },
+                        {
+                            "type": "android.content.ContentValues"
+                        }
+                    ],
+                    "signature": "insert(android.net.Uri,android.content.ContentValues):android.net.Uri"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "boolean",
+                    "parameters": [
+                    ],
+                    "signature": "onCreate():boolean"
+                },
+                {
+                    "name": "query",
+                    "returnType": "android.database.Cursor",
+                    "parameters": [
+                        {
+                            "type": "android.net.Uri"
+                        },
+                        {
+                            "type": "[Ljava.lang.String;"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        },
+                        {
+                            "type": "[Ljava.lang.String;"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "query(android.net.Uri,[Ljava.lang.String;,java.lang.String,[Ljava.lang.String;,java.lang.String):android.database.Cursor"
+                },
+                {
+                    "name": "update",
+                    "returnType": "int",
+                    "parameters": [
+                        {
+                            "type": "android.net.Uri"
+                        },
+                        {
+                            "type": "android.content.ContentValues"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        },
+                        {
+                            "type": "[Ljava.lang.String;"
+                        }
+                    ],
+                    "signature": "update(android.net.Uri,android.content.ContentValues,java.lang.String,[Ljava.lang.String;):int"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.LoginActivity$2",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.ViewStatement",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "callPreferences",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "callPreferences():void"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "onCreateOptionsMenu",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.Menu"
+                        }
+                    ],
+                    "signature": "onCreateOptionsMenu(android.view.Menu):boolean"
+                },
+                {
+                    "name": "onOptionsItemSelected",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.MenuItem"
+                        }
+                    ],
+                    "signature": "onOptionsItemSelected(android.view.MenuItem):boolean"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.LoginActivity$3",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.DoTransfer",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "access$000",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                        {
+                            "type": "com.android.insecurebankv2.DoTransfer"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "access$000(com.android.insecurebankv2.DoTransfer,java.lang.String):java.lang.String"
+                },
+                {
+                    "name": "getNormalizedPassword",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "getNormalizedPassword(java.lang.String):java.lang.String"
+                },
+                {
+                    "name": "callPreferences",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "callPreferences():void"
+                },
+                {
+                    "name": "convertStreamToString",
                     "returnType": "java.lang.String",
                     "parameters": [
                         {
                             "type": "java.io.InputStream"
                         }
                     ],
-                    "signature": "copyInputStreamToString(java.io.InputStream):java.lang.String"
+                    "signature": "convertStreamToString(java.io.InputStream):java.lang.String"
                 },
-                {
-                    "name": "result",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "java.lang.String"
-                        }
-                    ],
-                    "signature": "result(java.lang.String):void"
-                },
-                {
-                    "name": "onHandleIntent",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "android.content.Intent"
-                        }
-                    ],
-                    "signature": "onHandleIntent(android.content.Intent):void"
-                }
-            ]
-        },
-        {
-            "name": "edu.ksu.cs.benign.MyTrustManager",
-            "packageName": "edu.ksu.cs.benign",
-            "methods": [
-                {
-                    "name": "checkClientTrusted",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "[Ljava.security.cert.X509Certificate;"
-                        },
-                        {
-                            "type": "java.lang.String"
-                        }
-                    ],
-                    "signature": "checkClientTrusted([Ljava.security.cert.X509Certificate;,java.lang.String):void"
-                },
-                {
-                    "name": "checkServerTrusted",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "[Ljava.security.cert.X509Certificate;"
-                        },
-                        {
-                            "type": "java.lang.String"
-                        }
-                    ],
-                    "signature": "checkServerTrusted([Ljava.security.cert.X509Certificate;,java.lang.String):void"
-                },
-                {
-                    "name": "getAcceptedIssuers",
-                    "returnType": "[Ljava.security.cert.X509Certificate;",
-                    "parameters": [
-                    ],
-                    "signature": "getAcceptedIssuers():[Ljava.security.cert.X509Certificate;"
-                }
-            ]
-        },
-        {
-            "name": "edu.ksu.cs.benign.ResponseActivity",
-            "packageName": "edu.ksu.cs.benign",
-            "methods": [
                 {
                     "name": "onCreate",
                     "returnType": "void",
@@ -119,25 +732,194 @@
                         }
                     ],
                     "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "onCreateOptionsMenu",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.Menu"
+                        }
+                    ],
+                    "signature": "onCreateOptionsMenu(android.view.Menu):boolean"
+                },
+                {
+                    "name": "onOptionsItemSelected",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.MenuItem"
+                        }
+                    ],
+                    "signature": "onOptionsItemSelected(android.view.MenuItem):boolean"
                 }
             ]
         },
         {
-            "name": "edu.ksu.cs.benign.MyIntentService$1",
-            "packageName": "edu.ksu.cs.benign",
+            "name": "com.android.insecurebankv2.MyWebViewClient",
+            "packageName": "com.android.insecurebankv2",
             "methods": [
                 {
-                    "name": "verify",
+                    "name": "shouldOverrideUrlLoading",
                     "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.webkit.WebView"
+                        },
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "shouldOverrideUrlLoading(android.webkit.WebView,java.lang.String):boolean"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.FilePrefActivity",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "callPreferences",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "callPreferences():void"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "onCreateOptionsMenu",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.Menu"
+                        }
+                    ],
+                    "signature": "onCreateOptionsMenu(android.view.Menu):boolean"
+                },
+                {
+                    "name": "onOptionsItemSelected",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "android.view.MenuItem"
+                        }
+                    ],
+                    "signature": "onOptionsItemSelected(android.view.MenuItem):boolean"
+                },
+                {
+                    "name": "setPreferences",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "setPreferences():void"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.DoLogin$RequestTask$1",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "run",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "run():void"
+                }
+            ]
+        },
+        {
+            "name": "com.android.insecurebankv2.DoLogin$RequestTask",
+            "packageName": "com.android.insecurebankv2",
+            "methods": [
+                {
+                    "name": "convertStreamToString",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                        {
+                            "type": "java.io.InputStream"
+                        }
+                    ],
+                    "signature": "convertStreamToString(java.io.InputStream):java.lang.String"
+                },
+                {
+                    "name": "saveCreds",
+                    "returnType": "void",
                     "parameters": [
                         {
                             "type": "java.lang.String"
                         },
                         {
-                            "type": "javax.net.ssl.SSLSession"
+                            "type": "java.lang.String"
                         }
                     ],
-                    "signature": "verify(java.lang.String,javax.net.ssl.SSLSession):boolean"
+                    "signature": "saveCreds(java.lang.String,java.lang.String):void"
+                },
+                {
+                    "name": "trackUserLogins",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "trackUserLogins():void"
+                },
+                {
+                    "name": "doInBackground",
+                    "returnType": "java.lang.Object",
+                    "parameters": [
+                        {
+                            "type": "[Ljava.lang.Object;"
+                        }
+                    ],
+                    "signature": "doInBackground([Ljava.lang.Object;):java.lang.Object"
+                },
+                {
+                    "name": "doInBackground",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                        {
+                            "type": "[Ljava.lang.String;"
+                        }
+                    ],
+                    "signature": "doInBackground([Ljava.lang.String;):java.lang.String"
+                },
+                {
+                    "name": "onPostExecute",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "java.lang.Double"
+                        }
+                    ],
+                    "signature": "onPostExecute(java.lang.Double):void"
+                },
+                {
+                    "name": "onProgressUpdate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "[Ljava.lang.Integer;"
+                        }
+                    ],
+                    "signature": "onProgressUpdate([Ljava.lang.Integer;):void"
+                },
+                {
+                    "name": "postData",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "postData(java.lang.String):void"
                 }
             ]
         }
@@ -147,28 +929,81 @@
     "manifest": {
         "permissions": [
             "android.permission.INTERNET",
-            "android.permission.POST_NOTIFICATIONS"
+            "android.permission.WRITE_EXTERNAL_STORAGE",
+            "android.permission.SEND_SMS",
+            "android.permission.USE_CREDENTIALS",
+            "android.permission.GET_ACCOUNTS",
+            "android.permission.READ_PROFILE",
+            "android.permission.READ_CONTACTS",
+            "android.permission.READ_PHONE_STATE",
+            "android.permission.READ_CALL_LOG",
+            "android.permission.ACCESS_NETWORK_STATE",
+            "android.permission.ACCESS_COARSE_LOCATION",
+            "android.permission.POST_NOTIFICATIONS",
+            "android.permission.READ_EXTERNAL_STORAGE",
+            "android.permission.ACCESS_BACKGROUND_LOCATION",
+            "android.permission.ACCESS_MEDIA_LOCATION",
+            "android.permission.READ_MEDIA_AUDIO",
+            "android.permission.READ_MEDIA_VIDEO",
+            "android.permission.READ_MEDIA_IMAGES",
+            "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
         ],
         "activities": [
             {
-                "name": "edu.ksu.cs.benign.MainActivity",
+                "name": "com.android.insecurebankv2.LoginActivity",
                 "exported": true
             },
             {
-                "name": "edu.ksu.cs.benign.ResponseActivity",
+                "name": "com.android.insecurebankv2.FilePrefActivity",
+                "exported": false
+            },
+            {
+                "name": "com.android.insecurebankv2.DoLogin",
+                "exported": false
+            },
+            {
+                "name": "com.android.insecurebankv2.PostLogin",
+                "exported": true
+            },
+            {
+                "name": "com.android.insecurebankv2.WrongLogin",
+                "exported": false
+            },
+            {
+                "name": "com.android.insecurebankv2.DoTransfer",
+                "exported": true
+            },
+            {
+                "name": "com.android.insecurebankv2.ViewStatement",
+                "exported": true
+            },
+            {
+                "name": "com.android.insecurebankv2.ChangePassword",
+                "exported": true
+            },
+            {
+                "name": "com.google.android.gms.ads.AdActivity",
+                "exported": false
+            },
+            {
+                "name": "com.google.android.gms.ads.purchase.InAppPurchaseActivity",
                 "exported": false
             }
         ],
         "services": [
+        ],
+        "receivers": [
             {
-                "name": "edu.ksu.cs.benign.MyIntentService",
+                "name": "com.android.insecurebankv2.MyBroadCastReceiver",
+                "exported": true
+            },
+            {
+                "name": "com.google.android.gms.wallet.EnableWalletOptimizationReceiver",
                 "exported": false
             }
         ],
-        "receivers": [
-        ],
-        "minSdk": 22,
-        "targetSdk": 27,
+        "minSdk": 15,
+        "targetSdk": 22,
         "isDebuggable": true
     }
 }

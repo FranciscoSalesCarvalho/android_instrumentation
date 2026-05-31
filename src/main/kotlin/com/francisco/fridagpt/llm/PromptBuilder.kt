@@ -1,8 +1,5 @@
 package com.francisco.fridagpt.llm
 
-import com.francisco.fridagpt.core.ActionType
-import com.francisco.fridagpt.core.MultiHookQuery
-import com.francisco.fridagpt.core.ParsedQuery
 import com.francisco.fridagpt.models.AppContext
 import com.francisco.fridagpt.models.ClassCategory
 import com.francisco.fridagpt.models.ClassInfo
@@ -16,12 +13,12 @@ class PromptBuilder {
     /**
      * Prompt para query específica (classe e método conhecidos)
      */
-    fun buildSpecificPrompt(parsed: ParsedQuery): String {
+    fun buildSpecificPrompt(query: String): String {
         return """
             You are an expert in Frida dynamic instrumentation for Android.
             
             Generate a Frida script in JavaScript to accomplish the following task:
-            ${parsed.originalQuery}
+            $query
                 
             ${buildRequirements()}
             
@@ -31,75 +28,14 @@ class PromptBuilder {
     }
 
     /**
-     * Prompt para múltiplos hooks
-     */
-    fun buildMultiHookPrompt(multiHook: MultiHookQuery): String {
-        val hooksDescription = multiHook.hooks.mapIndexed { index, hook ->
-            """
-                Hook ${index + 1}:
-                  - Class: ${hook.className}
-                  - Method: ${hook.methodName}
-                  ${if (hook.parameters.isNotEmpty()) "- Parameters: ${hook.parameters.joinToString(", ")}" else ""}
-                  - Action: ${getActionDescription(hook.action, hook.returnValue)}
-            """.trimIndent()
-        }.joinToString("\n\n")
-
-        return """
-                You are an expert in Frida dynamic instrumentation for Android.
-                
-                Generate a Frida script in JavaScript to accomplish ALL of the following tasks:
-                
-                TARGETS (${multiHook.hooks.size} hooks required):
-                $hooksDescription
-                
-                ${buildRequirements()}
-                
-                EXAMPLE STRUCTURE:
-                ```javascript
-                Java.perform(function() {
-                    console.log("[+] Starting multi-hook script");
-                    
-                    // Hook 1: Class1.method1
-                    try {
-                        var Class1 = Java.use("...");
-                        Class1.method1.implementation = function() {
-                            console.log("[Hook 1] Class1.method1 called");
-                            // action
-                        };
-                    } catch(e) {
-                        console.error("[Hook 1] Failed: " + e);
-                    }
-                    
-                    // Hook 2: Class2.method2
-                    try {
-                        var Class2 = Java.use("...");
-                        Class2.method2.implementation = function() {
-                            console.log("[Hook 2] Class2.method2 called");
-                            // action
-                        };
-                    } catch(e) {
-                        console.error("[Hook 2] Failed: " + e);
-                    }
-                    
-                    console.log("[+] All hooks installed");
-                });
-                ```
-                
-                OUTPUT:
-                Provide ONLY the JavaScript code, no explanations before or after.
-        """.trimIndent()
-    }
-
-    /**
      * Prompt para query com contexto (classes relevantes conhecidas)
      */
     fun buildContextualPrompt(
         query: String,
         relevantClasses: List<ClassInfo>,
-        context: AppContext,
-        needsMultipleHooks: Boolean = false
+        context: AppContext
     ): String {
-        val classesInfo = relevantClasses.take(5).joinToString("\n") { classInfo ->
+        val classesInfo = relevantClasses.joinToString("\n") { classInfo ->
             val methodsInfo = if (classInfo.methods.isNotEmpty()) {
                 classInfo.methods.take(10).joinToString("\n      ") {
                     "- ${it.signature}"
@@ -133,15 +69,6 @@ class PromptBuilder {
             TASK:
             Analyze the user request and the available classes/methods, then generate a Frida script to accomplish the task.
             
-            ${
-            if (needsMultipleHooks) """
-            IMPORTANT - MULTIPLE HOOKS REQUIRED:
-            The user's request suggests hooking multiple related methods. Consider:
-            1.Hook just the methods asked by the user.
-                """ 
-                else ""
-            }
-            
             ${buildRequirements()}
             
             OUTPUT:
@@ -155,8 +82,7 @@ class PromptBuilder {
     fun buildGenericPrompt(
         query: String,
         context: AppContext,
-        stacktrace: String? = null,
-        needsMultipleHooks: Boolean = false
+        stacktrace: String? = null
     ): String {
         val appClasses = context.classes
             .filter {
@@ -169,7 +95,6 @@ class PromptBuilder {
             val methodsInfo = if (classInfo.methods.isNotEmpty()) {
                 classInfo.methods
                     .filter { !it.name.contains("$") }
-                    .take(10)
                     .joinToString("\n      ") {
                     "- ${it.signature}"
                 }
@@ -210,15 +135,6 @@ class PromptBuilder {
             Based on the user request and app information, generate a Frida script to accomplish the goal.
             You may need to make educated guesses about which classes/methods to hook based on common Android patterns.
             
-            ${
-                if (needsMultipleHooks) """
-                IMPORTANT - MULTIPLE HOOKS REQUIRED:
-                The user's request suggests hooking multiple related methods. Consider:
-                1.Hook just the methods asked by the user.
-                    """
-                else ""
-            }
-            
             For example:
             - Emulator detection: often in Application class, SecurityCheck, DeviceValidator classes
             - Root detection: RootChecker, SecurityManager classes  
@@ -231,34 +147,6 @@ class PromptBuilder {
             OUTPUT:
             Provide ONLY the JavaScript code, no explanations.
         """.trimIndent()
-    }
-
-    /**
-     * Descreve a ação requerida
-     */
-    private fun getActionDescription(action: ActionType, returnValue: String?): String {
-        return when (action) {
-            ActionType.RETURN_FALSE ->
-                returnValue ?: "Always return false (bypass the check)"
-
-            ActionType.RETURN_TRUE ->
-                returnValue ?: "Always return true"
-
-            ActionType.RETURN_NULL ->
-                "Always return null"
-
-            ActionType.RETURN_CUSTOM ->
-                "Return the value: $returnValue"
-
-            ActionType.LOG_CALLS ->
-                returnValue ?: "Log all method calls with parameters and return values"
-
-            ActionType.MODIFY_PARAMS ->
-                "Intercept and modify method parameters"
-
-            ActionType.HOOK_GENERIC ->
-                returnValue ?: "Hook the method and log when it's called"
-        }
     }
 
     /**

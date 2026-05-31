@@ -87,35 +87,4 @@ class QueryRouter {
 
         return patterns.any { it.containsMatchIn(query) }
     }
-
-    /**
-     * Fornece dicas sobre como melhorar a query
-     */
-    fun getSuggestions(queryType: QueryType): String {
-        return when (queryType) {
-            QueryType.SPECIFIC -> """
-                ✅ Excellent! Specific query will be fastest (~1-2s)
-                
-                Format detected: Fully qualified class and method
-                Processing will use minimal context collection.
-            """.trimIndent()
-
-            QueryType.SEMI_SPECIFIC -> """
-                ⚡ Good! Semi-specific query will be fast (~3-5s)
-                
-                💡 Tip: For even faster results, use fully qualified class name:
-                   Instead of: "bypass isEmulator method"
-                   Try: "hook com.example.SecurityCheck.isEmulator() return false"
-            """.trimIndent()
-
-            QueryType.GENERIC -> """
-                🔎 Generic query will require full context (~5-10s)
-                
-                💡 Tip: If you know the class/method, be more specific:
-                   Current: "bypass emulator detection"
-                   Better: "bypass isEmulator method from SecurityCheck"
-                   Best: "hook com.example.SecurityCheck.isEmulator() return false"
-            """.trimIndent()
-        }
-    }
 }
