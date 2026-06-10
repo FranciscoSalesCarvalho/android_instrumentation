@@ -15,12 +15,8 @@ class PromptBuilder {
      */
     fun buildSpecificPrompt(query: String): String {
         return """
-            You are an expert in Frida dynamic instrumentation for Android.
-            
             Generate a Frida script in JavaScript to accomplish the following task:
             $query
-                
-            ${buildRequirements()}
             
             OUTPUT:
             Provide ONLY the JavaScript code, no explanations before or after.
@@ -32,10 +28,9 @@ class PromptBuilder {
      */
     fun buildContextualPrompt(
         query: String,
-        relevantClasses: List<ClassInfo>,
         context: AppContext
     ): String {
-        val classesInfo = relevantClasses.joinToString("\n") { classInfo ->
+        val classesInfo = context.classes.joinToString("\n") { classInfo ->
             val methodsInfo = if (classInfo.methods.isNotEmpty()) {
                 classInfo.methods.take(10).joinToString("\n      ") {
                     "- ${it.signature}"
@@ -51,8 +46,6 @@ class PromptBuilder {
         }
 
         return """
-            You are an expert in Frida dynamic instrumentation for Android.
-            
             USER REQUEST:
             "$query"
             
@@ -68,8 +61,6 @@ class PromptBuilder {
             
             TASK:
             Analyze the user request and the available classes/methods, then generate a Frida script to accomplish the task.
-            
-            ${buildRequirements()}
             
             OUTPUT:
             Provide ONLY the JavaScript code, no explanations.
@@ -96,8 +87,8 @@ class PromptBuilder {
                 classInfo.methods
                     .filter { !it.name.contains("$") }
                     .joinToString("\n      ") {
-                    "- ${it.signature}"
-                }
+                        "- ${it.signature}"
+                    }
             } else {
                 "  (methods not collected)"
             }
@@ -112,8 +103,6 @@ class PromptBuilder {
         val stacktraceSection = buildStacktraceSection(stacktrace)
 
         return """
-            You are an expert in Frida dynamic instrumentation for Android.
-            
             USER REQUEST:
             "$query"
             
@@ -142,23 +131,11 @@ class PromptBuilder {
             
             $stacktraceSection
             
-            ${buildRequirements()}
-            
             OUTPUT:
             Provide ONLY the JavaScript code, no explanations.
         """.trimIndent()
     }
 
-    /**
-     * Gera a seção de contexto nativo para inclusão no prompt.
-     *
-     * Prioriza informações de proteção (o que realmente importa para o LLM
-     * gerar scripts que lidem com anti-análise), seguido de métodos JNI
-     * e resumo de módulos.
-     *
-     * @param nativeContext contexto nativo coletado, ou null se indisponível
-     * @return string formatada para injeção no prompt, ou vazia se sem contexto
-     */
     private fun buildNativeSection(nativeContext: NativeContext?): String {
         if (nativeContext == null) return ""
 
@@ -169,11 +146,9 @@ class PromptBuilder {
         sb.appendLine("- Pointer size: ${nativeContext.pointerSize} bytes")
         sb.appendLine("- Modules: ${nativeContext.summary.app} app / ${nativeContext.summary.total} total")
 
-        // 1. Proteções detectadas (prioridade máxima para o LLM)
         if (nativeContext.protections.isNotEmpty()) {
             sb.appendLine()
             sb.appendLine("NATIVE PROTECTIONS DETECTED:")
-
             val byCategory = nativeContext.protections.groupBy { it.category }
             byCategory.forEach { (category, detections) ->
                 sb.appendLine("  [$category]")
@@ -183,7 +158,6 @@ class PromptBuilder {
             }
         }
 
-        // 2. Módulos do app com exports
         if (nativeContext.modules.isNotEmpty()) {
             sb.appendLine()
             sb.appendLine("APP NATIVE MODULES (${nativeContext.modules.size}):")
@@ -200,7 +174,6 @@ class PromptBuilder {
             }
         }
 
-        // 3. Instrução ao LLM se proteções detectadas
         if (nativeContext.protections.isNotEmpty()) {
             sb.appendLine()
             sb.appendLine("IMPORTANT: This application has native-level protections.")
@@ -235,6 +208,22 @@ class PromptBuilder {
     }
 
     companion object {
+
+        /**
+         * System prompt compartilhado por todos os tipos de query.
+         *
+         * Separado do user prompt para aproveitar o campo `system` da API Anthropic
+         * e o role "system" da OpenAI. Como nunca muda entre chamadas, também
+         * permite cache de prompt no lado da API.
+         */
+        fun buildSystemPrompt(): String {
+            return """
+                You are an expert in Frida dynamic instrumentation for Android.
+                
+                ${buildRequirements()}
+            """.trimIndent()
+        }
+
         fun buildRequirements(): String {
             return """
             REQUIREMENTS:

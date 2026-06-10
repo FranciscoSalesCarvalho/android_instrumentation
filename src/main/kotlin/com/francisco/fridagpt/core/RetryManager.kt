@@ -2,7 +2,9 @@ package com.francisco.fridagpt.core
 
 import com.francisco.fridagpt.llm.CorrectionPromptBuilder
 import com.francisco.fridagpt.llm.GeneratedScript
-import com.francisco.fridagpt.llm.LLMClient
+import com.francisco.fridagpt.llm.AnthropicProvider
+import com.francisco.fridagpt.llm.LLMProvider
+import com.francisco.fridagpt.llm.PromptBuilder
 import com.francisco.fridagpt.models.ExecutionRecord
 import com.francisco.fridagpt.utils.LogcatCapture
 import com.francisco.fridagpt.utils.Spinner
@@ -27,7 +29,7 @@ private val logger = KotlinLogging.logger {}
  * 7. Output exibido ao analista (que pode acionar /retry novamente)
  */
 class RetryManager(
-    private val llmClient: LLMClient,
+    private val llmClient: LLMProvider,
     private val scriptExecutor: ScriptExecutor,
     val logcatCapture: LogcatCapture,
     private val correctionPromptBuilder: CorrectionPromptBuilder = CorrectionPromptBuilder()
@@ -71,7 +73,7 @@ class RetryManager(
 
         // 2. Enviar ao LLM
         val generatedScript = Spinner.withSpinner("\n🤖 Generating Frida script with Claude...") {
-            llmClient.generateScript(correctionPrompt, maxTokens = 8192)
+            llmClient.generateScript(PromptBuilder.buildSystemPrompt(), correctionPrompt)
         }
         if (generatedScript == null) {
             logger.error { "LLM failed to generate corrected script" }

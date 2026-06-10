@@ -42,7 +42,7 @@ object Spinner {
             val result = block()
             running = false
             spinnerJob.join()
-            System.out.print("\r✅\n")
+            System.out.print("\r${" ".repeat(message.length + 4)}\r")
             System.out.flush()
             result
         } catch (e: Exception) {

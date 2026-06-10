@@ -5,10 +5,10 @@ package com.francisco.fridagpt
 import com.francisco.fridagpt.collectors.LogAnalyzer
 import com.francisco.fridagpt.collectors.StorageCollector
 import com.francisco.fridagpt.core.*
-import com.francisco.fridagpt.llm.LLMClient
+import com.francisco.fridagpt.llm.LLMProvider
+import com.francisco.fridagpt.llm.LLMProviderFactory
 import com.francisco.fridagpt.llm.PromptBuilder
 import com.francisco.fridagpt.models.ExecutionRecord
-import com.francisco.fridagpt.models.MethodInfo
 import com.francisco.fridagpt.utils.LogcatCapture
 import com.francisco.fridagpt.utils.Spinner
 import com.github.ajalt.clikt.core.CliktCommand
@@ -89,6 +89,16 @@ class FridaLLMTool : CliktCommand() {
         help = "Port frida running"
     ).int().default(27042)
 
+    private val llmProviderName by option(
+        "--llm",
+        help = "LLM provider to use: anthropic (default), openai"
+    ).default("anthropic")
+
+    private val llmModel by option(
+        "--model",
+        help = "Override default model for the selected LLM provider"
+    )
+
     override fun run() = runBlocking {
         printBanner()
 
@@ -124,13 +134,20 @@ class FridaLLMTool : CliktCommand() {
                 connector = connector,
                 logcatCapture = logcat,
             )
-            val llmClient = if (key != null) LLMClient(key) else null
+            val llmProvider = if (key != null) {
+                LLMProviderFactory.create(
+                    providerName = llmProviderName,
+                    apiKey = key,
+                    modelOverride = llmModel
+                )
+            } else null
+
             val collector = ContextCollector(connector)
 
             // Inicializar RetryManager
-            val retryManager = if (llmClient != null) {
+            val retryManager = if (llmProvider != null) {
                 RetryManager(
-                    llmClient = llmClient,
+                    llmClient = llmProvider,
                     scriptExecutor = executor,
                     logcatCapture = logcat
                 )
@@ -157,7 +174,7 @@ class FridaLLMTool : CliktCommand() {
                     collector = collector,
                     router = router,
                     promptBuilder = promptBuilder,
-                    llmClient = llmClient,
+                    llmClient = llmProvider,
                     executor = executor,
                     retryManager = retryManager,
                     logcatCapture = logcat,
@@ -168,7 +185,7 @@ class FridaLLMTool : CliktCommand() {
 
             // Modo interativo
             if (interactive) {
-                if (llmClient == null) {
+                if (llmProvider == null) {
                     logger.warn { "Interactive mode without API key - limited functionality" }
                 }
 
@@ -177,7 +194,7 @@ class FridaLLMTool : CliktCommand() {
                     router = router,
                     collector = collector,
                     promptBuilder = promptBuilder,
-                    llmClient = llmClient,
+                    llmClient = llmProvider,
                     executor = executor,
                     retryManager = retryManager,
                     logcatCapture = logcat
@@ -193,7 +210,7 @@ class FridaLLMTool : CliktCommand() {
         collector: ContextCollector,
         router: QueryRouter,
         promptBuilder: PromptBuilder,
-        llmClient: LLMClient?,
+        llmClient: LLMProvider?,
         executor: ScriptExecutor,
         retryManager: RetryManager?,
         logcatCapture: LogcatCapture,
@@ -254,21 +271,21 @@ class FridaLLMTool : CliktCommand() {
     private suspend fun handleNormalBypass(
         query: String,
         promptBuilder: PromptBuilder,
-        llmClient: LLMClient?,
+        llmClient: LLMProvider?,
         executor: ScriptExecutor
     ) {
         // Gerar prompt
-        val prompt = promptBuilder.buildSpecificPrompt(query)
+        val userPrompt = promptBuilder.buildSpecificPrompt(query)
 
         if (llmClient == null) {
             println("\n📝 Prompt that would be sent:")
             println("━".repeat(50))
-            println(prompt.take(500) + "...")
+            println(userPrompt.take(500) + "...")
             return
         }
 
-        val generated = Spinner.withSpinner("\n🤖 Generating Frida script with Claude...") {
-            llmClient.generateScript(prompt, maxTokens = 8192)
+        val generated = Spinner.withSpinner("\n🤖 Generating Frida script with ${llmClient.providerName}...") {
+            llmClient.generateScript(PromptBuilder.buildSystemPrompt(), userPrompt)
         }
 
         if (generated == null) {
@@ -307,50 +324,34 @@ class FridaLLMTool : CliktCommand() {
         query: String,
         collector: ContextCollector,
         promptBuilder: PromptBuilder,
-        llmClient: LLMClient?,
+        llmClient: LLMProvider?,
         executor: ScriptExecutor
     ) {
         println("\n📊 Collecting context...")
-        val context = collector.collectBasicContext()
+        val context = collector.collectBasicContext { message, block ->
+            Spinner.withSpinner(message, block)
+        }
 
         if (context == null) {
             println("❌ Failed to collect context")
             return
         }
 
-        val relevantClasses =
-            context.classes.filter { !it.name.contains("$") && !it.name.contains("kt", ignoreCase = true) }
-
-        println("\n✅ Found ${relevantClasses.size} relevant classes:")
-        relevantClasses.forEach {
-            println("   - ${it.name}")
-        }
-
-        // Coletar métodos das classes relevantes
-        println("\n🔄 Collecting methods from relevant classes...")
-        val classesWithMethods = relevantClasses.map { classInfo ->
-            val methods = collector.collectMethodsForClass(classInfo.name)
-
-            println("${classInfo.name}: ${methods.size} methods")
-            classInfo.copy(methods = methods)
-        }
-
         // Gerar prompt
-        val prompt = promptBuilder.buildContextualPrompt(
+        val userPrompt = promptBuilder.buildContextualPrompt(
             query = query,
-            relevantClasses = classesWithMethods,
             context = context
         )
 
         if (llmClient == null) {
             println("\n📝 Prompt that would be sent:")
             println("━".repeat(50))
-            println(prompt.take(800) + "...")
+            println(userPrompt.take(800) + "...")
             return
         }
 
-        val generated = Spinner.withSpinner("\n🤖 Generating Frida script with Claude...") {
-            llmClient.generateScript(prompt, maxTokens = 8192)
+        val generated = Spinner.withSpinner("\n🤖 Generating Frida script with ${llmClient.providerName}...") {
+            llmClient.generateScript(PromptBuilder.buildSystemPrompt(), userPrompt)
         }
 
         if (generated == null) {
@@ -387,15 +388,17 @@ class FridaLLMTool : CliktCommand() {
         query: String,
         collector: ContextCollector,
         promptBuilder: PromptBuilder,
-        llmClient: LLMClient?,
+        llmClient: LLMProvider?,
         executor: ScriptExecutor,
         retryManager: RetryManager?,
         logcatCapture: LogcatCapture,
         stacktraceContent: String? = null
     ) {
-        println("\n📊 Collecting full context for generic query...")
+        println("\n📊 Collecting full context...")
 
-        val context = collector.collectForQuery(query)
+        val context = collector.collectForGeneric(query) { message, block ->
+            Spinner.withSpinner(message, block)
+        }
 
         if (context == null) {
             println("❌ Failed to collect context")
@@ -411,7 +414,7 @@ class FridaLLMTool : CliktCommand() {
         }
 
         // Gerar prompt
-        val prompt = promptBuilder.buildGenericPrompt(
+        val userPrompt = promptBuilder.buildGenericPrompt(
             query = query,
             context = context,
             stacktrace = stacktraceContent
@@ -420,12 +423,12 @@ class FridaLLMTool : CliktCommand() {
         if (llmClient == null) {
             println("\n📝 Prompt that would be sent:")
             println("━".repeat(50))
-            println(prompt.take(1000) + "...")
+            println(userPrompt.take(1000) + "...")
             return
         }
 
-        val generated = Spinner.withSpinner("\n🤖 Generating Frida script with Claude...") {
-            llmClient.generateScript(prompt, maxTokens = 8192)
+        val generated = Spinner.withSpinner("\n🤖 Generating Frida script with ${llmClient.providerName}...") {
+            llmClient.generateScript(PromptBuilder.buildSystemPrompt(), userPrompt)
         }
 
         if (generated == null) {
@@ -479,7 +482,7 @@ class FridaLLMTool : CliktCommand() {
         router: QueryRouter,
         collector: ContextCollector,
         promptBuilder: PromptBuilder,
-        llmClient: LLMClient?,
+        llmClient: LLMProvider?,
         executor: ScriptExecutor,
         retryManager: RetryManager?,
         logcatCapture: LogcatCapture,

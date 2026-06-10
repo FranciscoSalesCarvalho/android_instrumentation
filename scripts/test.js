@@ -1,159 +1,150 @@
 Java.perform(function() {
-    console.log("[*] Starting authentication credential capture for com.vulnforum");
+    console.log("[+] Starting emulator detection bypass...");
     
     try {
-        // Hook SharedPreferences Editor implementations to capture stored credentials
-        var SharedPrefsEditorImpl = Java.use("android.app.SharedPreferencesImpl$EditorImpl");
-        SharedPrefsEditorImpl.putString.implementation = function(key, value) {
-            try {
-                var keyStr = key ? key.toString() : "null";
-                var valueStr = value ? value.toString() : "null";
-                
-                // Look for common credential keys
-                if (keyStr.toLowerCase().indexOf("password") !== -1 || 
-                    keyStr.toLowerCase().indexOf("pass") !== -1 ||
-                    keyStr.toLowerCase().indexOf("pwd") !== -1 ||
-                    keyStr.toLowerCase().indexOf("token") !== -1 ||
-                    keyStr.toLowerCase().indexOf("auth") !== -1 ||
-                    keyStr.toLowerCase().indexOf("username") !== -1 ||
-                    keyStr.toLowerCase().indexOf("user") !== -1 ||
-                    keyStr.toLowerCase().indexOf("email") !== -1) {
-                    console.log("[!] CREDENTIAL STORED - Key: " + keyStr + " | Value: " + valueStr);
-                }
-            } catch (e) {
-                console.log("[-] Error in SharedPreferences hook: " + e);
-            }
-            return this.putString(key, value);
+        // Hook the main emulator detection method
+        var EmulatorDetectionActivity = Java.use("owasp.sat.agoat.EmulatorDetectionActivity");
+        EmulatorDetectionActivity.isEmulator.implementation = function() {
+            console.log("[+] EmulatorDetectionActivity.isEmulator() called - bypassing");
+            return false;
         };
-        console.log("[+] Hooked SharedPreferences putString");
+        console.log("[+] Hooked EmulatorDetectionActivity.isEmulator()");
     } catch (e) {
-        console.log("[-] Failed to hook SharedPreferences: " + e);
+        console.log("[-] Failed to hook EmulatorDetectionActivity.isEmulator(): " + e);
     }
 
+    // Common Android emulator detection methods
     try {
-        // Hook EditText to capture input field values
-        var EditText = Java.use("android.widget.EditText");
-        EditText.getText.implementation = function() {
-            try {
-                var result = this.getText();
-                var text = result ? result.toString() : "";
-                var hint = this.getHint();
-                var hintStr = hint ? hint.toString() : "";
-                
-                // Check if this might be a password or username field
-                if (text.length > 0 && (
-                    hintStr.toLowerCase().indexOf("password") !== -1 ||
-                    hintStr.toLowerCase().indexOf("username") !== -1 ||
-                    hintStr.toLowerCase().indexOf("email") !== -1 ||
-                    text.length >= 6)) { // Potential password length
-                    console.log("[!] EDITTEXT INPUT - Hint: " + hintStr + " | Text: " + text);
-                }
-                return result;
-            } catch (e) {
-                console.log("[-] Error in EditText hook: " + e);
-            }
-            return this.getText();
+        var Build = Java.use("android.os.Build");
+        Build.FINGERPRINT.value = "google/sdk_gphone_x86/generic_x86:10/QSR1.190920.001/5891938:user/release-keys";
+        Build.MODEL.value = "Pixel 3";
+        Build.MANUFACTURER.value = "Google";
+        Build.BRAND.value = "google";
+        Build.DEVICE.value = "blueline";
+        Build.PRODUCT.value = "blueline";
+        Build.HARDWARE.value = "blueline";
+        Build.ID.value = "QP1A.190711.020";
+        Build.BOARD.value = "sdm845";
+        console.log("[+] Modified Build properties");
+    } catch (e) {
+        console.log("[-] Failed to modify Build properties: " + e);
+    }
+
+    // Hook TelephonyManager for IMEI/device ID checks
+    try {
+        var TelephonyManager = Java.use("android.telephony.TelephonyManager");
+        TelephonyManager.getDeviceId.overload().implementation = function() {
+            console.log("[+] TelephonyManager.getDeviceId() called - returning fake IMEI");
+            return "358240051111110";
         };
-        console.log("[+] Hooked EditText getText");
-    } catch (e) {
-        console.log("[-] Failed to hook EditText: " + e);
-    }
-
-    try {
-        // Hook HTTP request methods to capture credentials in network calls
-        var HttpURLConnection = Java.use("java.net.HttpURLConnection");
-        HttpURLConnection.getOutputStream.implementation = function() {
-            try {
-                console.log("[*] HTTP request detected - URL: " + this.getURL().toString());
-                var originalStream = this.getOutputStream();
-                
-                // Create a wrapper to intercept written data
-                var ByteArrayOutputStream = Java.use("java.io.ByteArrayOutputStream");
-                var interceptStream = ByteArrayOutputStream.$new();
-                
-                return originalStream;
-            } catch (e) {
-                console.log("[-] Error in HttpURLConnection hook: " + e);
-                return this.getOutputStream();
-            }
+        
+        TelephonyManager.getDeviceId.overload('int').implementation = function(slotIndex) {
+            console.log("[+] TelephonyManager.getDeviceId(int) called - returning fake IMEI");
+            return "358240051111110";
         };
-        console.log("[+] Hooked HttpURLConnection getOutputStream");
-    } catch (e) {
-        console.log("[-] Failed to hook HttpURLConnection: " + e);
-    }
-
-    try {
-        // Hook common authentication method patterns
-        Java.enumerateLoadedClasses({
-            onMatch: function(className) {
-                if (className.indexOf("com.vulnforum") === 0 && 
-                    (className.toLowerCase().indexOf("login") !== -1 ||
-                     className.toLowerCase().indexOf("auth") !== -1 ||
-                     className.toLowerCase().indexOf("signin") !== -1)) {
-                    
-                    try {
-                        var targetClass = Java.use(className);
-                        var methods = targetClass.class.getDeclaredMethods();
-                        
-                        methods.forEach(function(method) {
-                            var methodName = method.getName();
-                            if (methodName.toLowerCase().indexOf("login") !== -1 ||
-                                methodName.toLowerCase().indexOf("auth") !== -1 ||
-                                methodName.toLowerCase().indexOf("signin") !== -1) {
-                                
-                                try {
-                                    var originalMethod = targetClass[methodName];
-                                    if (originalMethod) {
-                                        targetClass[methodName].implementation = function() {
-                                            console.log("[!] AUTH METHOD CALLED: " + className + "." + methodName);
-                                            console.log("[!] Arguments: " + Array.prototype.slice.call(arguments).join(", "));
-                                            return originalMethod.apply(this, arguments);
-                                        };
-                                        console.log("[+] Hooked " + className + "." + methodName);
-                                    }
-                                } catch (hookError) {
-                                    // Skip method if hooking fails
-                                }
-                            }
-                        });
-                    } catch (classError) {
-                        // Skip class if processing fails
-                    }
-                }
-            },
-            onComplete: function() {
-                console.log("[*] Completed scanning for authentication classes");
-            }
-        });
-    } catch (e) {
-        console.log("[-] Failed to enumerate authentication classes: " + e);
-    }
-
-    try {
-        // Hook Bundle to catch Intent data that might contain credentials
-        var Bundle = Java.use("android.os.Bundle");
-        Bundle.getString.overload('java.lang.String').implementation = function(key) {
-            try {
-                var result = this.getString(key);
-                var keyStr = key ? key.toString() : "null";
-                var valueStr = result ? result.toString() : "null";
-                
-                if (keyStr.toLowerCase().indexOf("password") !== -1 ||
-                    keyStr.toLowerCase().indexOf("username") !== -1 ||
-                    keyStr.toLowerCase().indexOf("email") !== -1 ||
-                    keyStr.toLowerCase().indexOf("token") !== -1) {
-                    console.log("[!] BUNDLE CREDENTIAL - Key: " + keyStr + " | Value: " + valueStr);
-                }
-                return result;
-            } catch (e) {
-                console.log("[-] Error in Bundle hook: " + e);
-                return this.getString(key);
-            }
+        
+        TelephonyManager.getSubscriberId.implementation = function() {
+            console.log("[+] TelephonyManager.getSubscriberId() called - returning fake IMSI");
+            return "310260000000000";
         };
-        console.log("[+] Hooked Bundle getString");
+        
+        TelephonyManager.getLine1Number.implementation = function() {
+            console.log("[+] TelephonyManager.getLine1Number() called - returning fake number");
+            return "15551234567";
+        };
+        
+        TelephonyManager.getNetworkOperatorName.implementation = function() {
+            console.log("[+] TelephonyManager.getNetworkOperatorName() called");
+            return "T-Mobile";
+        };
+        
+        TelephonyManager.getSimOperatorName.implementation = function() {
+            console.log("[+] TelephonyManager.getSimOperatorName() called");
+            return "T-Mobile";
+        };
+        
+        console.log("[+] Hooked TelephonyManager methods");
     } catch (e) {
-        console.log("[-] Failed to hook Bundle: " + e);
+        console.log("[-] Failed to hook TelephonyManager: " + e);
     }
 
-    console.log("[*] Authentication credential capture hooks installed successfully");
+    // Hook Settings.Secure for Android ID
+    try {
+        var Settings = Java.use("android.provider.Settings$Secure");
+        Settings.getString.implementation = function(resolver, name) {
+            if (name == "android_id") {
+                console.log("[+] Settings.Secure.getString() called for android_id - returning fake ID");
+                return "9774d56d682e549c";
+            }
+            return this.getString(resolver, name);
+        };
+        console.log("[+] Hooked Settings.Secure.getString()");
+    } catch (e) {
+        console.log("[-] Failed to hook Settings.Secure: " + e);
+    }
+
+    // Hook SystemProperties for emulator-specific properties
+    try {
+        var SystemProperties = Java.use("android.os.SystemProperties");
+        SystemProperties.get.overload('java.lang.String').implementation = function(key) {
+            var result = this.get(key);
+            if (key.indexOf("ro.kernel.qemu") !== -1 || 
+                key.indexOf("ro.bootmode") !== -1 ||
+                key.indexOf("ro.hardware") !== -1) {
+                console.log("[+] SystemProperties.get() called for " + key + " - original: " + result);
+                if (key == "ro.hardware") {
+                    return "qcom";
+                }
+                if (key == "ro.bootmode") {
+                    return "unknown";
+                }
+                return "";
+            }
+            return result;
+        };
+
+        SystemProperties.get.overload('java.lang.String', 'java.lang.String').implementation = function(key, def) {
+            var result = this.get(key, def);
+            if (key.indexOf("ro.kernel.qemu") !== -1 || 
+                key.indexOf("ro.bootmode") !== -1 ||
+                key.indexOf("ro.hardware") !== -1) {
+                console.log("[+] SystemProperties.get() called for " + key + " with default - original: " + result);
+                if (key == "ro.hardware") {
+                    return "qcom";
+                }
+                if (key == "ro.bootmode") {
+                    return "unknown";
+                }
+                return def;
+            }
+            return result;
+        };
+        console.log("[+] Hooked SystemProperties.get()");
+    } catch (e) {
+        console.log("[-] Failed to hook SystemProperties: " + e);
+    }
+
+    // Hook File operations for common emulator detection files
+    try {
+        var File = Java.use("java.io.File");
+        File.exists.implementation = function() {
+            var name = this.getName();
+            var path = this.getAbsolutePath();
+            
+            if (path.indexOf("goldfish") !== -1 || 
+                path.indexOf("genymotion") !== -1 ||
+                path.indexOf("andy") !== -1 ||
+                path.indexOf("nox") !== -1 ||
+                name == "qemu-props") {
+                console.log("[+] File.exists() called for emulator file: " + path + " - returning false");
+                return false;
+            }
+            return this.exists();
+        };
+        console.log("[+] Hooked File.exists()");
+    } catch (e) {
+        console.log("[-] Failed to hook File.exists(): " + e);
+    }
+
+    console.log("[+] Emulator detection bypass setup complete");
 });

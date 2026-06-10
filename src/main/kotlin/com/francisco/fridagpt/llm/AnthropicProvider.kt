@@ -19,10 +19,14 @@ private val logger = KotlinLogging.logger {}
 /**
  * Cliente para Anthropic Claude API
  */
-class LLMClient(
+class AnthropicProvider(
     private val apiKey: String,
-    private val model: String = "claude-sonnet-4-20250514"
-) {
+    override val modelName: String = "claude-sonnet-4-20250514",
+    private val maxTokens: Int = 4096
+) : LLMProvider {
+    override val providerName: String
+        get() = "Claude"
+
     private val client = HttpClient(CIO) {
         install(HttpTimeout) {
             requestTimeoutMillis = 120_000 // 2 minutes for Claude API
@@ -40,20 +44,26 @@ class LLMClient(
     private val baseUrl = "https://api.anthropic.com/v1/messages"
 
     /**
-     * Gera script Frida usando Claude
+     * Gera um script Frida chamando a API da Anthropic.
+     *
+     * @param systemPrompt Instruções de sistema (requisitos 1–17, formato de saída, etc.)
+     * @param userPrompt   Query do usuário + contexto dinâmico coletado pelos collectors.
+     * @return             [GeneratedScript] com código extraído, ou null em caso de falha.
      */
-    suspend fun generateScript(prompt: String, maxTokens: Int = 4096): GeneratedScript? {
+    override suspend fun generateScript(systemPrompt: String, userPrompt: String): GeneratedScript? {
         return try {
             logger.info { "Sending request to Claude API..." }
-            logger.debug { "Prompt length: ${prompt.length} chars" }
+            logger.debug { "System prompt length: ${systemPrompt.length} chars" }
+            logger.debug { "User prompt length:   ${userPrompt.length} chars" }
 
             val request = ClaudeRequest(
-                model = model,
+                model = modelName,
                 maxTokens = maxTokens,
+                system = systemPrompt,
                 messages = listOf(
                     Message(
                         role = "user",
-                        content = prompt
+                        content = userPrompt
                     )
                 )
             )
@@ -72,14 +82,17 @@ class LLMClient(
             }
 
             val claudeResponse = response.body<ClaudeResponse>()
-            val scriptText = claudeResponse.content.firstOrNull()?.text ?: ""
+            val scriptText = claudeResponse.content
+                .filter { it.type == "text" }
+                .joinToString("\n") { it.text }
+                .trim()
 
             logger.info { "Script generated successfully (${scriptText.length} chars)" }
 
             GeneratedScript(
                 script = extractJavaScript(scriptText),
                 rawResponse = scriptText,
-                model = model,
+                model = modelName,
                 tokensUsed = claudeResponse.usage.outputTokens
             )
         } catch (e: Exception) {
@@ -109,21 +122,12 @@ class LLMClient(
     }
 }
 
-/**
- * Script gerado pelo LLM
- */
-data class GeneratedScript(
-    val script: String,
-    val rawResponse: String,
-    val model: String,
-    val tokensUsed: Int
-)
-
 @Serializable
 private data class ClaudeRequest(
     val model: String,
     @SerialName("max_tokens")
     val maxTokens: Int,
+    val system: String,
     val messages: List<Message>
 )
 

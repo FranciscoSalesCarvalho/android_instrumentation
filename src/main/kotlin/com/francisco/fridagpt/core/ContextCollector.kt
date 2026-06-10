@@ -17,6 +17,7 @@ import mu.KotlinLogging
 import kotlin.collections.map
 
 private val logger = KotlinLogging.logger {}
+typealias ProgressWrapper = suspend (message: String, block: suspend () -> List<ClassInfo>) -> List<ClassInfo>
 
 class ContextCollector(
     private val connector: FridaConnector
@@ -135,10 +136,19 @@ class ContextCollector(
     }
 
     /**
-     * Coleta contexto inteligente baseado em query
-     * Suporta múltiplos hooks
+     * Coleta contexto inteligente baseado em query.
+     * Suporta múltiplos hooks.
+     *
+     * @param query            Query do usuário para identificar classes e métodos relevantes.
+     * @param progressWrapper  Wrapper opcional para a etapa de coleta de métodos, permitindo
+     *                         ao chamador envolver o trabalho em um spinner ou qualquer outro
+     *                         mecanismo de feedback visual, sem acoplar o ContextCollector a
+     *                         dependências de UI.
      */
-    suspend fun collectForQuery(query: String): AppContext? = coroutineScope {
+    suspend fun collectForGeneric(
+        query: String,
+        progressWrapper: ProgressWrapper? = null
+    ): AppContext? = coroutineScope {
         try {
             logger.info { "Collecting context for query: $query" }
 
@@ -155,16 +165,22 @@ class ContextCollector(
             val needsMultipleMethods = detectMultipleMethodsNeed(query)
 
             // 4. Coleta métodos das classes relevantes SOB DEMANDA
-            val classesWithMethods = if (needsMultipleMethods) {
-                logger.info { "Collecting ALL related methods for multi-hook scenario" }
-                collectRelatedMethods(relevantClasses, keywords)
-            } else {
-                logger.info { "Collecting specific methods" }
-                relevantClasses.map { classInfo ->
-                    val methods = collectMethodsForClass(classInfo.name)
-                    classInfo.copy(methods = methods)
+            val collectBlock: suspend () -> List<ClassInfo> = {
+                if (needsMultipleMethods) {
+                    collectRelatedMethods(relevantClasses, keywords)
+                } else {
+                    logger.info { "Collecting specific methods" }
+                    relevantClasses.map { classInfo ->
+                        val methods = collectMethodsForClass(classInfo.name)
+                        classInfo.copy(methods = methods)
+                    }
                 }
             }
+
+            val classesWithMethods = progressWrapper?.invoke(
+                "🔍 Collecting methods from ${relevantClasses.size} classes...",
+                collectBlock
+            ) ?: collectBlock()
 
             // 5. Retorna contexto enriquecido
             AppContext(
@@ -182,9 +198,15 @@ class ContextCollector(
     }
 
     /**
-     * Coleta contexto básico (apenas essencial - mais rápido)
+     * Coleta contexto básico com métodos das classes relevantes.
+     *
+     * @param progressWrapper  Wrapper opcional para a etapa de coleta de métodos,
+     *                         permitindo ao chamador exibir feedback visual sem
+     *                         acoplar o ContextCollector a dependências de UI.
      */
-    suspend fun collectBasicContext(): AppContext? = coroutineScope {
+    suspend fun collectBasicContext(
+        progressWrapper: ProgressWrapper? = null
+    ): AppContext? = coroutineScope {
         try {
             logger.info { "Collecting basic context..." }
 
@@ -200,13 +222,21 @@ class ContextCollector(
             }
             val frameworks = libraryDetector.detect()
 
-            logger.info { "Basic context collected" }
-            logger.info { "  - App classes: ${classes.size}" }
-            logger.info { "  - Frameworks: ${frameworks.size}" }
+            val collectBlock: suspend () -> List<ClassInfo> = {
+                classes.map { classInfo ->
+                    val methods = collectMethodsForClass(classInfo.name)
+                    classInfo.copy(methods = methods)
+                }
+            }
+
+            val classesWithMethods = progressWrapper?.invoke(
+                "🔍 Collecting methods from ${classes.size} classes...",
+                collectBlock
+            ) ?: collectBlock()
 
             AppContext(
                 appInfo = appInfo,
-                classes = classes,
+                classes = classesWithMethods,
                 libraries = frameworks,
                 manifest = null,
                 storage = null

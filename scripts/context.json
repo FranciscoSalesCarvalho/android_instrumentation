@@ -1,118 +1,772 @@
 {
     "appInfo": {
-        "packageName": "com.vulnforum",
-        "targetSdk": 34,
-        "minSdk": 24,
+        "packageName": "owasp.sat.agoat",
+        "targetSdk": 26,
+        "minSdk": 18,
         "isDebuggable": true,
         "backupActive": true,
-        "dataDir": "/data/user/0/com.vulnforum"
+        "dataDir": "/data/user/0/owasp.sat.agoat"
     },
     "classes": [
         {
-            "name": "com.vulnforum.ui.forum.PaywallScreenKt",
-            "packageName": "com.vulnforum.ui.forum"
+            "name": "owasp.sat.agoat.TrafficActivity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "_$_clearFindViewByIdCache",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "_$_clearFindViewByIdCache():void"
+                },
+                {
+                    "name": "_$_findCachedViewById",
+                    "returnType": "android.view.View",
+                    "parameters": [
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "_$_findCachedViewById(int):android.view.View"
+                },
+                {
+                    "name": "doPinning",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "doPinning():void"
+                },
+                {
+                    "name": "getHttpsurl",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                    ],
+                    "signature": "getHttpsurl():java.lang.String"
+                },
+                {
+                    "name": "getHttpurl",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                    ],
+                    "signature": "getHttpurl():java.lang.String"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "run",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "run(java.lang.String):void"
+                },
+                {
+                    "name": "setHttpsurl",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "setHttpsurl(java.lang.String):void"
+                },
+                {
+                    "name": "setHttpurl",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "setHttpurl(java.lang.String):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.screens.MessagesScreenKt",
-            "packageName": "com.vulnforum.ui.screens"
+            "name": "owasp.sat.agoat.EmulatorDetectionActivity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "isEmulator",
+                    "returnType": "boolean",
+                    "parameters": [
+                    ],
+                    "signature": "isEmulator():boolean"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.screens.ForumScreenKt",
-            "packageName": "com.vulnforum.ui.screens"
+            "name": "owasp.sat.agoat.MainActivity$onCreate$1",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.forum.ArticleDetailScreenKt",
-            "packageName": "com.vulnforum.ui.forum"
+            "name": "owasp.sat.agoat.SplashActivity$onCreate$1",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "run",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "run():void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.screens.ChallengesScreenKt",
-            "packageName": "com.vulnforum.ui.screens"
+            "name": "owasp.sat.agoat.MainActivity$onCreate$2",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.screens.AdminScreenKt",
-            "packageName": "com.vulnforum.ui.screens"
+            "name": "owasp.sat.agoat.InputValidationsActivity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "_$_clearFindViewByIdCache",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "_$_clearFindViewByIdCache():void"
+                },
+                {
+                    "name": "_$_findCachedViewById",
+                    "returnType": "android.view.View",
+                    "parameters": [
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "_$_findCachedViewById(int):android.view.View"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.theme.ThemeKt",
-            "packageName": "com.vulnforum.ui.theme"
+            "name": "owasp.sat.agoat.MainActivity$onCreate$3",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.screens.RegisterScreenKt",
-            "packageName": "com.vulnforum.ui.screens"
+            "name": "owasp.sat.agoat.MainActivity$onCreate$4",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.screens.HomeScreenKt",
-            "packageName": "com.vulnforum.ui.screens"
+            "name": "owasp.sat.agoat.AccessControlIssue1Activity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "_$_clearFindViewByIdCache",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "_$_clearFindViewByIdCache():void"
+                },
+                {
+                    "name": "_$_findCachedViewById",
+                    "returnType": "android.view.View",
+                    "parameters": [
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "_$_findCachedViewById(int):android.view.View"
+                },
+                {
+                    "name": "createPIN",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "createPIN(java.lang.String):boolean"
+                },
+                {
+                    "name": "hashPIN",
+                    "returnType": "java.lang.String",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "hashPIN(java.lang.String):java.lang.String"
+                },
+                {
+                    "name": "isPinCorrect",
+                    "returnType": "boolean",
+                    "parameters": [
+                        {
+                            "type": "java.lang.String"
+                        }
+                    ],
+                    "signature": "isPinCorrect(java.lang.String):boolean"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "verifyIfPinSet",
+                    "returnType": "boolean",
+                    "parameters": [
+                    ],
+                    "signature": "verifyIfPinSet():boolean"
+                },
+                {
+                    "name": "verifyPINView",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "verifyPINView():void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.MainActivity",
-            "packageName": "com.vulnforum"
+            "name": "owasp.sat.agoat.MainActivity$onCreate$5",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.messages.ComposeMessageScreenKt",
-            "packageName": "com.vulnforum.ui.messages"
+            "name": "owasp.sat.agoat.R$id",
+            "packageName": "owasp.sat.agoat"
         },
         {
-            "name": "com.vulnforum.util.SessionManager",
-            "packageName": "com.vulnforum.util"
+            "name": "owasp.sat.agoat.MainActivity$onCreate$6",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.screens.LoginScreenKt",
-            "packageName": "com.vulnforum.ui.screens"
+            "name": "owasp.sat.agoat.SplashActivity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "_$_clearFindViewByIdCache",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "_$_clearFindViewByIdCache():void"
+                },
+                {
+                    "name": "_$_findCachedViewById",
+                    "returnType": "android.view.View",
+                    "parameters": [
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "_$_findCachedViewById(int):android.view.View"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.data.RegisterRequest",
-            "packageName": "com.vulnforum.data"
+            "name": "owasp.sat.agoat.MainActivity$onCreate$7",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.screens.WalletScreenKt",
-            "packageName": "com.vulnforum.ui.screens"
+            "name": "owasp.sat.agoat.MainActivity$onCreate$8",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.ui.wallet.WalletViewModel",
-            "packageName": "com.vulnforum.ui.wallet"
+            "name": "owasp.sat.agoat.MainActivity$onCreate$9",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "onClick",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.view.View"
+                        }
+                    ],
+                    "signature": "onClick(android.view.View):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.data.LoginResponse",
-            "packageName": "com.vulnforum.data"
+            "name": "owasp.sat.agoat.HardCodeActivity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "_$_clearFindViewByIdCache",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "_$_clearFindViewByIdCache():void"
+                },
+                {
+                    "name": "_$_findCachedViewById",
+                    "returnType": "android.view.View",
+                    "parameters": [
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "_$_findCachedViewById(int):android.view.View"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.network.AuthService",
-            "packageName": "com.vulnforum.network"
+            "name": "owasp.sat.agoat.MainActivity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "_$_clearFindViewByIdCache",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "_$_clearFindViewByIdCache():void"
+                },
+                {
+                    "name": "_$_findCachedViewById",
+                    "returnType": "android.view.View",
+                    "parameters": [
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "_$_findCachedViewById(int):android.view.View"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.network.ApiClient",
-            "packageName": "com.vulnforum.network"
+            "name": "owasp.sat.agoat.BinaryPatchingActivity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "_$_clearFindViewByIdCache",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "_$_clearFindViewByIdCache():void"
+                },
+                {
+                    "name": "_$_findCachedViewById",
+                    "returnType": "android.view.View",
+                    "parameters": [
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "_$_findCachedViewById(int):android.view.View"
+                },
+                {
+                    "name": "isAdmin",
+                    "returnType": "boolean",
+                    "parameters": [
+                    ],
+                    "signature": "isAdmin():boolean"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                }
+            ]
         },
         {
-            "name": "com.vulnforum.data.LoginRequest",
-            "packageName": "com.vulnforum.data"
+            "name": "owasp.sat.agoat.InsecureStorageActivity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "_$_clearFindViewByIdCache",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "_$_clearFindViewByIdCache():void"
+                },
+                {
+                    "name": "_$_findCachedViewById",
+                    "returnType": "android.view.View",
+                    "parameters": [
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "_$_findCachedViewById(int):android.view.View"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                }
+            ]
+        },
+        {
+            "name": "owasp.sat.agoat.RootDetectionActivity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "_$_clearFindViewByIdCache",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "_$_clearFindViewByIdCache():void"
+                },
+                {
+                    "name": "_$_findCachedViewById",
+                    "returnType": "android.view.View",
+                    "parameters": [
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "_$_findCachedViewById(int):android.view.View"
+                },
+                {
+                    "name": "isRooted",
+                    "returnType": "boolean",
+                    "parameters": [
+                    ],
+                    "signature": "isRooted():boolean"
+                },
+                {
+                    "name": "isRooted1",
+                    "returnType": "boolean",
+                    "parameters": [
+                    ],
+                    "signature": "isRooted1():boolean"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                }
+            ]
+        },
+        {
+            "name": "owasp.sat.agoat.SideChannelDataLeakageActivity",
+            "packageName": "owasp.sat.agoat",
+            "methods": [
+                {
+                    "name": "_$_clearFindViewByIdCache",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "_$_clearFindViewByIdCache():void"
+                },
+                {
+                    "name": "_$_findCachedViewById",
+                    "returnType": "android.view.View",
+                    "parameters": [
+                        {
+                            "type": "int"
+                        }
+                    ],
+                    "signature": "_$_findCachedViewById(int):android.view.View"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                }
+            ]
         }
     ],
     "libraries": [
         {
             "name": "OkHttp",
-            "version": "unknown",
+            "version": "okhttp/3.8.0",
             "type": "NETWORKING",
             "mainClasses": [
                 "okhttp3.OkHttpClient"
             ]
-        },
-        {
-            "name": "Retrofit",
-            "version": "unknown",
-            "type": "NETWORKING",
-            "mainClasses": [
-                "retrofit2.Retrofit"
-            ]
-        },
-        {
-            "name": "Gson",
-            "version": "unknown",
-            "type": "SERIALIZATION",
-            "mainClasses": [
-                "com.google.gson.Gson"
-            ]
         }
-    ]
+    ],
+    "manifest": {
+        "permissions": [
+            "android.permission.INTERNET",
+            "android.permission.WRITE_EXTERNAL_STORAGE",
+            "android.permission.READ_EXTERNAL_STORAGE",
+            "android.permission.POST_NOTIFICATIONS",
+            "android.permission.ACCESS_MEDIA_LOCATION",
+            "android.permission.READ_MEDIA_AUDIO",
+            "android.permission.READ_MEDIA_VIDEO",
+            "android.permission.READ_MEDIA_IMAGES",
+            "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
+        ],
+        "activities": [
+            {
+                "name": "owasp.sat.agoat.SplashActivity",
+                "exported": true
+            },
+            {
+                "name": "owasp.sat.agoat.MainActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.RootDetectionActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.InsecureLoggingActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.XSSActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.SQLinjectionActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.InsecureStorageSharedPrefs",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.InsecureStorageTempActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.AccessControlIssue1Activity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.AccessControl1ViewActivity",
+                "exported": true
+            },
+            {
+                "name": "owasp.sat.agoat.HardCodeActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.InsecureStorageSQLiteActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.InsecureStorageSharedPrefs1Activity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.TrafficActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.ContentProviderActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.EmulatorDetectionActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.InsecureStorageSDCardActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.InputValidationsWebViewURLActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.InputValidationsOSCMDInjectionMain2Activity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.BinaryPatchingActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.ClipboardActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.InsecureStorageActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.SideChannelDataLeakageActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.InputValidationsActivity",
+                "exported": false
+            },
+            {
+                "name": "owasp.sat.agoat.KeyboardCacheActivity",
+                "exported": false
+            }
+        ],
+        "services": [
+            {
+                "name": "owasp.sat.agoat.DownloadInvoiceService",
+                "exported": true
+            }
+        ],
+        "receivers": [
+            {
+                "name": "owasp.sat.agoat.ShowDataReceiver",
+                "exported": true
+            }
+        ],
+        "minSdk": 18,
+        "targetSdk": 26,
+        "isDebuggable": true
+    }
 }
