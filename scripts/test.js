@@ -1,185 +1,159 @@
 Java.perform(function() {
-    console.log("[*] Starting WebView security monitoring...");
+    console.log("[*] Starting authentication credential capture for com.vulnforum");
     
     try {
-        // Hook WebView.loadUrl to detect insecure HTTP URLs
-        var WebView = Java.use("android.webkit.WebView");
-        
-        WebView.loadUrl.overload('java.lang.String').implementation = function(url) {
-            console.log("[WebView] Loading URL: " + url);
-            
-            if (url.startsWith("http://")) {
-                console.log("[!] SECURITY WARNING: Insecure HTTP URL detected: " + url);
-            } else if (url.startsWith("https://")) {
-                console.log("[+] Secure HTTPS URL: " + url);
-            } else if (url.startsWith("javascript:")) {
-                console.log("[!] SECURITY WARNING: JavaScript URL scheme detected: " + url);
-            } else if (url.startsWith("data:")) {
-                console.log("[!] SECURITY WARNING: Data URL scheme detected: " + url);
-            }
-            
-            return this.loadUrl(url);
-        };
-        
-        // Hook WebView.loadUrl with headers
-        WebView.loadUrl.overload('java.lang.String', 'java.util.Map').implementation = function(url, additionalHttpHeaders) {
-            console.log("[WebView] Loading URL with headers: " + url);
-            
-            if (url.startsWith("http://")) {
-                console.log("[!] SECURITY WARNING: Insecure HTTP URL detected: " + url);
-            }
-            
-            if (additionalHttpHeaders) {
-                var headersMap = Java.cast(additionalHttpHeaders, Java.use("java.util.HashMap"));
-                var entrySet = headersMap.entrySet();
-                var iterator = entrySet.iterator();
-                console.log("[WebView] Additional headers:");
-                while (iterator.hasNext()) {
-                    var entry = iterator.next();
-                    console.log("  " + entry.getKey() + ": " + entry.getValue());
+        // Hook SharedPreferences Editor implementations to capture stored credentials
+        var SharedPrefsEditorImpl = Java.use("android.app.SharedPreferencesImpl$EditorImpl");
+        SharedPrefsEditorImpl.putString.implementation = function(key, value) {
+            try {
+                var keyStr = key ? key.toString() : "null";
+                var valueStr = value ? value.toString() : "null";
+                
+                // Look for common credential keys
+                if (keyStr.toLowerCase().indexOf("password") !== -1 || 
+                    keyStr.toLowerCase().indexOf("pass") !== -1 ||
+                    keyStr.toLowerCase().indexOf("pwd") !== -1 ||
+                    keyStr.toLowerCase().indexOf("token") !== -1 ||
+                    keyStr.toLowerCase().indexOf("auth") !== -1 ||
+                    keyStr.toLowerCase().indexOf("username") !== -1 ||
+                    keyStr.toLowerCase().indexOf("user") !== -1 ||
+                    keyStr.toLowerCase().indexOf("email") !== -1) {
+                    console.log("[!] CREDENTIAL STORED - Key: " + keyStr + " | Value: " + valueStr);
                 }
+            } catch (e) {
+                console.log("[-] Error in SharedPreferences hook: " + e);
             }
-            
-            return this.loadUrl(url, additionalHttpHeaders);
+            return this.putString(key, value);
         };
-        
-        // Hook WebView.loadData to detect insecure content
-        WebView.loadData.implementation = function(data, mimeType, encoding) {
-            console.log("[WebView] Loading data with MIME type: " + mimeType);
-            
-            if (data && data.length > 100) {
-                console.log("[WebView] Data snippet: " + data.substring(0, 100) + "...");
-            } else {
-                console.log("[WebView] Data: " + data);
-            }
-            
-            // Check for JavaScript in the data
-            if (data && data.toLowerCase().includes("<script")) {
-                console.log("[!] SECURITY WARNING: JavaScript detected in loaded data");
-            }
-            
-            return this.loadData(data, mimeType, encoding);
-        };
-        
-        // Hook WebView.loadDataWithBaseURL
-        WebView.loadDataWithBaseURL.implementation = function(baseUrl, data, mimeType, encoding, historyUrl) {
-            console.log("[WebView] Loading data with base URL: " + baseUrl);
-            console.log("[WebView] History URL: " + historyUrl);
-            
-            if (baseUrl && baseUrl.startsWith("http://")) {
-                console.log("[!] SECURITY WARNING: Insecure HTTP base URL: " + baseUrl);
-            }
-            
-            if (data && data.toLowerCase().includes("<script")) {
-                console.log("[!] SECURITY WARNING: JavaScript detected in loaded data");
-            }
-            
-            return this.loadDataWithBaseURL(baseUrl, data, mimeType, encoding, historyUrl);
-        };
-        
+        console.log("[+] Hooked SharedPreferences putString");
     } catch (e) {
-        console.log("[-] Error hooking WebView methods: " + e.toString());
+        console.log("[-] Failed to hook SharedPreferences: " + e);
     }
-    
+
     try {
-        // Hook WebSettings to monitor JavaScript enablement
-        var WebSettings = Java.use("android.webkit.WebSettings");
-        
-        WebSettings.setJavaScriptEnabled.implementation = function(flag) {
-            if (flag) {
-                console.log("[!] SECURITY WARNING: JavaScript enabled in WebView");
-            } else {
-                console.log("[+] JavaScript disabled in WebView");
+        // Hook EditText to capture input field values
+        var EditText = Java.use("android.widget.EditText");
+        EditText.getText.implementation = function() {
+            try {
+                var result = this.getText();
+                var text = result ? result.toString() : "";
+                var hint = this.getHint();
+                var hintStr = hint ? hint.toString() : "";
+                
+                // Check if this might be a password or username field
+                if (text.length > 0 && (
+                    hintStr.toLowerCase().indexOf("password") !== -1 ||
+                    hintStr.toLowerCase().indexOf("username") !== -1 ||
+                    hintStr.toLowerCase().indexOf("email") !== -1 ||
+                    text.length >= 6)) { // Potential password length
+                    console.log("[!] EDITTEXT INPUT - Hint: " + hintStr + " | Text: " + text);
+                }
+                return result;
+            } catch (e) {
+                console.log("[-] Error in EditText hook: " + e);
             }
-            return this.setJavaScriptEnabled(flag);
+            return this.getText();
         };
-        
-        WebSettings.setAllowFileAccess.implementation = function(allow) {
-            if (allow) {
-                console.log("[!] SECURITY WARNING: File access enabled in WebView");
-            } else {
-                console.log("[+] File access disabled in WebView");
-            }
-            return this.setAllowFileAccess(allow);
-        };
-        
-        WebSettings.setAllowFileAccessFromFileURLs.implementation = function(flag) {
-            if (flag) {
-                console.log("[!] SECURITY WARNING: File access from file URLs enabled");
-            } else {
-                console.log("[+] File access from file URLs disabled");
-            }
-            return this.setAllowFileAccessFromFileURLs(flag);
-        };
-        
-        WebSettings.setAllowUniversalAccessFromFileURLs.implementation = function(flag) {
-            if (flag) {
-                console.log("[!] SECURITY WARNING: Universal access from file URLs enabled");
-            } else {
-                console.log("[+] Universal access from file URLs disabled");
-            }
-            return this.setAllowUniversalAccessFromFileURLs(flag);
-        };
-        
-        WebSettings.setMixedContentMode.implementation = function(mode) {
-            console.log("[WebView] Mixed content mode set to: " + mode);
-            if (mode == 2) { // MIXED_CONTENT_ALWAYS_ALLOW
-                console.log("[!] SECURITY WARNING: Mixed content always allowed");
-            }
-            return this.setMixedContentMode(mode);
-        };
-        
+        console.log("[+] Hooked EditText getText");
     } catch (e) {
-        console.log("[-] Error hooking WebSettings methods: " + e.toString());
+        console.log("[-] Failed to hook EditText: " + e);
     }
-    
+
     try {
-        // Hook WebViewClient methods to monitor resource loading
-        var WebViewClient = Java.use("android.webkit.WebViewClient");
-        
-        WebViewClient.shouldOverrideUrlLoading.overload('android.webkit.WebView', 'java.lang.String').implementation = function(view, url) {
-            console.log("[WebViewClient] Attempting to load URL: " + url);
-            
-            if (url.startsWith("http://")) {
-                console.log("[!] SECURITY WARNING: Insecure HTTP URL in shouldOverrideUrlLoading: " + url);
+        // Hook HTTP request methods to capture credentials in network calls
+        var HttpURLConnection = Java.use("java.net.HttpURLConnection");
+        HttpURLConnection.getOutputStream.implementation = function() {
+            try {
+                console.log("[*] HTTP request detected - URL: " + this.getURL().toString());
+                var originalStream = this.getOutputStream();
+                
+                // Create a wrapper to intercept written data
+                var ByteArrayOutputStream = Java.use("java.io.ByteArrayOutputStream");
+                var interceptStream = ByteArrayOutputStream.$new();
+                
+                return originalStream;
+            } catch (e) {
+                console.log("[-] Error in HttpURLConnection hook: " + e);
+                return this.getOutputStream();
             }
-            
-            return this.shouldOverrideUrlLoading(view, url);
         };
-        
-        WebViewClient.onReceivedError.overload('android.webkit.WebView', 'int', 'java.lang.String', 'java.lang.String').implementation = function(view, errorCode, description, failingUrl) {
-            console.log("[WebViewClient] Error loading URL: " + failingUrl);
-            console.log("[WebViewClient] Error code: " + errorCode + ", description: " + description);
-            return this.onReceivedError(view, errorCode, description, failingUrl);
-        };
-        
+        console.log("[+] Hooked HttpURLConnection getOutputStream");
     } catch (e) {
-        console.log("[-] Error hooking WebViewClient methods: " + e.toString());
+        console.log("[-] Failed to hook HttpURLConnection: " + e);
     }
-    
+
     try {
-        // Hook WebChromeClient to monitor JavaScript alerts and console messages
-        var WebChromeClient = Java.use("android.webkit.WebChromeClient");
-        
-        WebChromeClient.onJsAlert.implementation = function(view, url, message, result) {
-            console.log("[WebChromeClient] JavaScript Alert from " + url + ": " + message);
-            return this.onJsAlert(view, url, message, result);
-        };
-        
-        WebChromeClient.onConsoleMessage.overload('android.webkit.ConsoleMessage').implementation = function(consoleMessage) {
-            var messageLevel = consoleMessage.messageLevel().toString();
-            var message = consoleMessage.message();
-            var sourceId = consoleMessage.sourceId();
-            var lineNumber = consoleMessage.lineNumber();
-            
-            console.log("[WebChromeClient] Console " + messageLevel + " from " + sourceId + ":" + lineNumber + " - " + message);
-            
-            return this.onConsoleMessage(consoleMessage);
-        };
-        
+        // Hook common authentication method patterns
+        Java.enumerateLoadedClasses({
+            onMatch: function(className) {
+                if (className.indexOf("com.vulnforum") === 0 && 
+                    (className.toLowerCase().indexOf("login") !== -1 ||
+                     className.toLowerCase().indexOf("auth") !== -1 ||
+                     className.toLowerCase().indexOf("signin") !== -1)) {
+                    
+                    try {
+                        var targetClass = Java.use(className);
+                        var methods = targetClass.class.getDeclaredMethods();
+                        
+                        methods.forEach(function(method) {
+                            var methodName = method.getName();
+                            if (methodName.toLowerCase().indexOf("login") !== -1 ||
+                                methodName.toLowerCase().indexOf("auth") !== -1 ||
+                                methodName.toLowerCase().indexOf("signin") !== -1) {
+                                
+                                try {
+                                    var originalMethod = targetClass[methodName];
+                                    if (originalMethod) {
+                                        targetClass[methodName].implementation = function() {
+                                            console.log("[!] AUTH METHOD CALLED: " + className + "." + methodName);
+                                            console.log("[!] Arguments: " + Array.prototype.slice.call(arguments).join(", "));
+                                            return originalMethod.apply(this, arguments);
+                                        };
+                                        console.log("[+] Hooked " + className + "." + methodName);
+                                    }
+                                } catch (hookError) {
+                                    // Skip method if hooking fails
+                                }
+                            }
+                        });
+                    } catch (classError) {
+                        // Skip class if processing fails
+                    }
+                }
+            },
+            onComplete: function() {
+                console.log("[*] Completed scanning for authentication classes");
+            }
+        });
     } catch (e) {
-        console.log("[-] Error hooking WebChromeClient methods: " + e.toString());
+        console.log("[-] Failed to enumerate authentication classes: " + e);
     }
-    
-    console.log("[*] WebView security monitoring hooks installed successfully");
+
+    try {
+        // Hook Bundle to catch Intent data that might contain credentials
+        var Bundle = Java.use("android.os.Bundle");
+        Bundle.getString.overload('java.lang.String').implementation = function(key) {
+            try {
+                var result = this.getString(key);
+                var keyStr = key ? key.toString() : "null";
+                var valueStr = result ? result.toString() : "null";
+                
+                if (keyStr.toLowerCase().indexOf("password") !== -1 ||
+                    keyStr.toLowerCase().indexOf("username") !== -1 ||
+                    keyStr.toLowerCase().indexOf("email") !== -1 ||
+                    keyStr.toLowerCase().indexOf("token") !== -1) {
+                    console.log("[!] BUNDLE CREDENTIAL - Key: " + keyStr + " | Value: " + valueStr);
+                }
+                return result;
+            } catch (e) {
+                console.log("[-] Error in Bundle hook: " + e);
+                return this.getString(key);
+            }
+        };
+        console.log("[+] Hooked Bundle getString");
+    } catch (e) {
+        console.log("[-] Failed to hook Bundle: " + e);
+    }
+
+    console.log("[*] Authentication credential capture hooks installed successfully");
 });

@@ -6,6 +6,7 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.SerialName
@@ -65,7 +66,8 @@ class LLMClient(
             }
 
             if (response.status != HttpStatusCode.OK) {
-                logger.error { "Claude API error: ${response.status}" }
+                val errorBody = response.bodyAsText()
+                logger.error { "Claude API error: ${response.status} - $errorBody" }
                 return null
             }
 
