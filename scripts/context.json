@@ -1,129 +1,16 @@
 {
     "appInfo": {
-        "packageName": "owasp.sat.agoat",
-        "targetSdk": 26,
-        "minSdk": 18,
-        "isDebuggable": true,
+        "packageName": "com.app.damnvulnerablebank",
+        "targetSdk": 29,
+        "minSdk": 21,
+        "isDebuggable": false,
         "backupActive": true,
-        "dataDir": "/data/user/0/owasp.sat.agoat"
+        "dataDir": "/data/user/0/com.app.damnvulnerablebank"
     },
     "classes": [
         {
-            "name": "owasp.sat.agoat.TrafficActivity",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "_$_clearFindViewByIdCache",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "_$_clearFindViewByIdCache():void"
-                },
-                {
-                    "name": "_$_findCachedViewById",
-                    "returnType": "android.view.View",
-                    "parameters": [
-                        {
-                            "type": "int"
-                        }
-                    ],
-                    "signature": "_$_findCachedViewById(int):android.view.View"
-                },
-                {
-                    "name": "doPinning",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "doPinning():void"
-                },
-                {
-                    "name": "getHttpsurl",
-                    "returnType": "java.lang.String",
-                    "parameters": [
-                    ],
-                    "signature": "getHttpsurl():java.lang.String"
-                },
-                {
-                    "name": "getHttpurl",
-                    "returnType": "java.lang.String",
-                    "parameters": [
-                    ],
-                    "signature": "getHttpurl():java.lang.String"
-                },
-                {
-                    "name": "onCreate",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "android.os.Bundle"
-                        }
-                    ],
-                    "signature": "onCreate(android.os.Bundle):void"
-                },
-                {
-                    "name": "run",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "java.lang.String"
-                        }
-                    ],
-                    "signature": "run(java.lang.String):void"
-                },
-                {
-                    "name": "setHttpsurl",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "java.lang.String"
-                        }
-                    ],
-                    "signature": "setHttpsurl(java.lang.String):void"
-                },
-                {
-                    "name": "setHttpurl",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "java.lang.String"
-                        }
-                    ],
-                    "signature": "setHttpurl(java.lang.String):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.EmulatorDetectionActivity",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "isEmulator",
-                    "returnType": "boolean",
-                    "parameters": [
-                    ],
-                    "signature": "isEmulator():boolean"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.MainActivity$onCreate$1",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "onClick",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "android.view.View"
-                        }
-                    ],
-                    "signature": "onClick(android.view.View):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.SplashActivity$onCreate$1",
-            "packageName": "owasp.sat.agoat",
+            "name": "com.app.damnvulnerablebank.SplashScreen$a",
+            "packageName": "com.app.damnvulnerablebank",
             "methods": [
                 {
                     "name": "run",
@@ -135,300 +22,167 @@
             ]
         },
         {
-            "name": "owasp.sat.agoat.MainActivity$onCreate$2",
-            "packageName": "owasp.sat.agoat",
+            "name": "com.app.damnvulnerablebank.FridaCheckJNI",
+            "packageName": "com.app.damnvulnerablebank",
             "methods": [
                 {
-                    "name": "onClick",
+                    "name": "fridaCheck",
+                    "returnType": "int",
+                    "parameters": [
+                    ],
+                    "signature": "fridaCheck():int"
+                }
+            ]
+        },
+        {
+            "name": "com.app.damnvulnerablebank.SplashScreen",
+            "packageName": "com.app.damnvulnerablebank",
+            "methods": [
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                }
+            ]
+        },
+        {
+            "name": "com.app.damnvulnerablebank.MainActivity",
+            "packageName": "com.app.damnvulnerablebank",
+            "methods": [
+                {
+                    "name": "u",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "com.app.damnvulnerablebank.MainActivity"
+                        }
+                    ],
+                    "signature": "u(com.app.damnvulnerablebank.MainActivity):void"
+                },
+                {
+                    "name": "healthCheck",
                     "returnType": "void",
                     "parameters": [
                         {
                             "type": "android.view.View"
                         }
                     ],
-                    "signature": "onClick(android.view.View):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.InputValidationsActivity",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "_$_clearFindViewByIdCache",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "_$_clearFindViewByIdCache():void"
+                    "signature": "healthCheck(android.view.View):void"
                 },
                 {
-                    "name": "_$_findCachedViewById",
-                    "returnType": "android.view.View",
-                    "parameters": [
-                        {
-                            "type": "int"
-                        }
-                    ],
-                    "signature": "_$_findCachedViewById(int):android.view.View"
-                },
-                {
-                    "name": "onCreate",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "android.os.Bundle"
-                        }
-                    ],
-                    "signature": "onCreate(android.os.Bundle):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.MainActivity$onCreate$3",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "onClick",
+                    "name": "loginPage",
                     "returnType": "void",
                     "parameters": [
                         {
                             "type": "android.view.View"
                         }
                     ],
-                    "signature": "onClick(android.view.View):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.MainActivity$onCreate$4",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
+                    "signature": "loginPage(android.view.View):void"
+                },
                 {
-                    "name": "onClick",
+                    "name": "onBackPressed",
+                    "returnType": "void",
+                    "parameters": [
+                    ],
+                    "signature": "onBackPressed():void"
+                },
+                {
+                    "name": "onCreate",
+                    "returnType": "void",
+                    "parameters": [
+                        {
+                            "type": "android.os.Bundle"
+                        }
+                    ],
+                    "signature": "onCreate(android.os.Bundle):void"
+                },
+                {
+                    "name": "signupPage",
                     "returnType": "void",
                     "parameters": [
                         {
                             "type": "android.view.View"
                         }
                     ],
-                    "signature": "onClick(android.view.View):void"
+                    "signature": "signupPage(android.view.View):void"
                 }
             ]
         },
         {
-            "name": "owasp.sat.agoat.AccessControlIssue1Activity",
-            "packageName": "owasp.sat.agoat",
+            "name": "com.app.damnvulnerablebank.Dashboard",
+            "packageName": "com.app.damnvulnerablebank",
             "methods": [
                 {
-                    "name": "_$_clearFindViewByIdCache",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "_$_clearFindViewByIdCache():void"
-                },
-                {
-                    "name": "_$_findCachedViewById",
-                    "returnType": "android.view.View",
-                    "parameters": [
-                        {
-                            "type": "int"
-                        }
-                    ],
-                    "signature": "_$_findCachedViewById(int):android.view.View"
-                },
-                {
-                    "name": "createPIN",
-                    "returnType": "boolean",
-                    "parameters": [
-                        {
-                            "type": "java.lang.String"
-                        }
-                    ],
-                    "signature": "createPIN(java.lang.String):boolean"
-                },
-                {
-                    "name": "hashPIN",
-                    "returnType": "java.lang.String",
-                    "parameters": [
-                        {
-                            "type": "java.lang.String"
-                        }
-                    ],
-                    "signature": "hashPIN(java.lang.String):java.lang.String"
-                },
-                {
-                    "name": "isPinCorrect",
-                    "returnType": "boolean",
-                    "parameters": [
-                        {
-                            "type": "java.lang.String"
-                        }
-                    ],
-                    "signature": "isPinCorrect(java.lang.String):boolean"
-                },
-                {
-                    "name": "onCreate",
+                    "name": "u",
                     "returnType": "void",
                     "parameters": [
                         {
-                            "type": "android.os.Bundle"
+                            "type": "com.app.damnvulnerablebank.Dashboard"
                         }
                     ],
-                    "signature": "onCreate(android.os.Bundle):void"
+                    "signature": "u(com.app.damnvulnerablebank.Dashboard):void"
                 },
                 {
-                    "name": "verifyIfPinSet",
-                    "returnType": "boolean",
-                    "parameters": [
-                    ],
-                    "signature": "verifyIfPinSet():boolean"
-                },
-                {
-                    "name": "verifyPINView",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "verifyPINView():void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.MainActivity$onCreate$5",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "onClick",
+                    "name": "addBeneficiary",
                     "returnType": "void",
                     "parameters": [
                         {
                             "type": "android.view.View"
                         }
                     ],
-                    "signature": "onClick(android.view.View):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.R$id",
-            "packageName": "owasp.sat.agoat"
-        },
-        {
-            "name": "owasp.sat.agoat.MainActivity$onCreate$6",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
+                    "signature": "addBeneficiary(android.view.View):void"
+                },
                 {
-                    "name": "onClick",
+                    "name": "getCurrencyRates",
                     "returnType": "void",
                     "parameters": [
                         {
                             "type": "android.view.View"
                         }
                     ],
-                    "signature": "onClick(android.view.View):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.SplashActivity",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "_$_clearFindViewByIdCache",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "_$_clearFindViewByIdCache():void"
+                    "signature": "getCurrencyRates(android.view.View):void"
                 },
                 {
-                    "name": "_$_findCachedViewById",
-                    "returnType": "android.view.View",
-                    "parameters": [
-                        {
-                            "type": "int"
-                        }
-                    ],
-                    "signature": "_$_findCachedViewById(int):android.view.View"
-                },
-                {
-                    "name": "onCreate",
-                    "returnType": "void",
-                    "parameters": [
-                        {
-                            "type": "android.os.Bundle"
-                        }
-                    ],
-                    "signature": "onCreate(android.os.Bundle):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.MainActivity$onCreate$7",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "onClick",
+                    "name": "getPendingBeneficiaries",
                     "returnType": "void",
                     "parameters": [
                         {
                             "type": "android.view.View"
                         }
                     ],
-                    "signature": "onClick(android.view.View):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.MainActivity$onCreate$8",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
+                    "signature": "getPendingBeneficiaries(android.view.View):void"
+                },
                 {
-                    "name": "onClick",
+                    "name": "logout",
                     "returnType": "void",
                     "parameters": [
                         {
                             "type": "android.view.View"
                         }
                     ],
-                    "signature": "onClick(android.view.View):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.MainActivity$onCreate$9",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
+                    "signature": "logout(android.view.View):void"
+                },
                 {
-                    "name": "onClick",
+                    "name": "myprofile",
                     "returnType": "void",
                     "parameters": [
                         {
                             "type": "android.view.View"
                         }
                     ],
-                    "signature": "onClick(android.view.View):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.HardCodeActivity",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
+                    "signature": "myprofile(android.view.View):void"
+                },
                 {
-                    "name": "_$_clearFindViewByIdCache",
+                    "name": "onBackPressed",
                     "returnType": "void",
                     "parameters": [
                     ],
-                    "signature": "_$_clearFindViewByIdCache():void"
-                },
-                {
-                    "name": "_$_findCachedViewById",
-                    "returnType": "android.view.View",
-                    "parameters": [
-                        {
-                            "type": "int"
-                        }
-                    ],
-                    "signature": "_$_findCachedViewById(int):android.view.View"
+                    "signature": "onBackPressed():void"
                 },
                 {
                     "name": "onCreate",
@@ -439,334 +193,241 @@
                         }
                     ],
                     "signature": "onCreate(android.os.Bundle):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.MainActivity",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "_$_clearFindViewByIdCache",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "_$_clearFindViewByIdCache():void"
                 },
                 {
-                    "name": "_$_findCachedViewById",
-                    "returnType": "android.view.View",
-                    "parameters": [
-                        {
-                            "type": "int"
-                        }
-                    ],
-                    "signature": "_$_findCachedViewById(int):android.view.View"
-                },
-                {
-                    "name": "onCreate",
+                    "name": "resetPassword",
                     "returnType": "void",
                     "parameters": [
                         {
-                            "type": "android.os.Bundle"
+                            "type": "android.view.View"
                         }
                     ],
-                    "signature": "onCreate(android.os.Bundle):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.BinaryPatchingActivity",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "_$_clearFindViewByIdCache",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "_$_clearFindViewByIdCache():void"
+                    "signature": "resetPassword(android.view.View):void"
                 },
                 {
-                    "name": "_$_findCachedViewById",
-                    "returnType": "android.view.View",
-                    "parameters": [
-                        {
-                            "type": "int"
-                        }
-                    ],
-                    "signature": "_$_findCachedViewById(int):android.view.View"
-                },
-                {
-                    "name": "isAdmin",
-                    "returnType": "boolean",
-                    "parameters": [
-                    ],
-                    "signature": "isAdmin():boolean"
-                },
-                {
-                    "name": "onCreate",
+                    "name": "viewBeneficiaryAdmin",
                     "returnType": "void",
                     "parameters": [
                         {
-                            "type": "android.os.Bundle"
+                            "type": "android.view.View"
                         }
                     ],
-                    "signature": "onCreate(android.os.Bundle):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.InsecureStorageActivity",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "_$_clearFindViewByIdCache",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "_$_clearFindViewByIdCache():void"
+                    "signature": "viewBeneficiaryAdmin(android.view.View):void"
                 },
                 {
-                    "name": "_$_findCachedViewById",
-                    "returnType": "android.view.View",
-                    "parameters": [
-                        {
-                            "type": "int"
-                        }
-                    ],
-                    "signature": "_$_findCachedViewById(int):android.view.View"
-                },
-                {
-                    "name": "onCreate",
+                    "name": "viewMyBeneficiaries",
                     "returnType": "void",
                     "parameters": [
                         {
-                            "type": "android.os.Bundle"
+                            "type": "android.view.View"
                         }
                     ],
-                    "signature": "onCreate(android.os.Bundle):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.RootDetectionActivity",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "_$_clearFindViewByIdCache",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "_$_clearFindViewByIdCache():void"
+                    "signature": "viewMyBeneficiaries(android.view.View):void"
                 },
                 {
-                    "name": "_$_findCachedViewById",
-                    "returnType": "android.view.View",
-                    "parameters": [
-                        {
-                            "type": "int"
-                        }
-                    ],
-                    "signature": "_$_findCachedViewById(int):android.view.View"
-                },
-                {
-                    "name": "isRooted",
-                    "returnType": "boolean",
-                    "parameters": [
-                    ],
-                    "signature": "isRooted():boolean"
-                },
-                {
-                    "name": "isRooted1",
-                    "returnType": "boolean",
-                    "parameters": [
-                    ],
-                    "signature": "isRooted1():boolean"
-                },
-                {
-                    "name": "onCreate",
+                    "name": "viewTransactions",
                     "returnType": "void",
                     "parameters": [
                         {
-                            "type": "android.os.Bundle"
+                            "type": "android.view.View"
                         }
                     ],
-                    "signature": "onCreate(android.os.Bundle):void"
-                }
-            ]
-        },
-        {
-            "name": "owasp.sat.agoat.SideChannelDataLeakageActivity",
-            "packageName": "owasp.sat.agoat",
-            "methods": [
-                {
-                    "name": "_$_clearFindViewByIdCache",
-                    "returnType": "void",
-                    "parameters": [
-                    ],
-                    "signature": "_$_clearFindViewByIdCache():void"
+                    "signature": "viewTransactions(android.view.View):void"
                 },
                 {
-                    "name": "_$_findCachedViewById",
-                    "returnType": "android.view.View",
-                    "parameters": [
-                        {
-                            "type": "int"
-                        }
-                    ],
-                    "signature": "_$_findCachedViewById(int):android.view.View"
-                },
-                {
-                    "name": "onCreate",
+                    "name": "viewbalance",
                     "returnType": "void",
                     "parameters": [
                         {
-                            "type": "android.os.Bundle"
+                            "type": "android.view.View"
                         }
                     ],
-                    "signature": "onCreate(android.os.Bundle):void"
+                    "signature": "viewbalance(android.view.View):void"
                 }
             ]
         }
     ],
     "libraries": [
-        {
-            "name": "OkHttp",
-            "version": "okhttp/3.8.0",
-            "type": "NETWORKING",
-            "mainClasses": [
-                "okhttp3.OkHttpClient"
-            ]
-        }
     ],
     "manifest": {
         "permissions": [
             "android.permission.INTERNET",
-            "android.permission.WRITE_EXTERNAL_STORAGE",
-            "android.permission.READ_EXTERNAL_STORAGE",
-            "android.permission.POST_NOTIFICATIONS",
-            "android.permission.ACCESS_MEDIA_LOCATION",
-            "android.permission.READ_MEDIA_AUDIO",
-            "android.permission.READ_MEDIA_VIDEO",
-            "android.permission.READ_MEDIA_IMAGES",
-            "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
+            "android.permission.USE_BIOMETRIC",
+            "android.permission.USE_FINGERPRINT",
+            "android.permission.POST_NOTIFICATIONS"
         ],
         "activities": [
             {
-                "name": "owasp.sat.agoat.SplashActivity",
+                "name": "com.app.damnvulnerablebank.Myprofile",
+                "exported": false
+            },
+            {
+                "name": "com.app.damnvulnerablebank.CurrencyRates",
                 "exported": true
             },
             {
-                "name": "owasp.sat.agoat.MainActivity",
+                "name": "com.app.damnvulnerablebank.ResetPassword",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.RootDetectionActivity",
+                "name": "com.app.damnvulnerablebank.ViewBeneficiary",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.InsecureLoggingActivity",
+                "name": "com.app.damnvulnerablebank.ApproveBeneficiary",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.XSSActivity",
+                "name": "com.app.damnvulnerablebank.PendingBeneficiary",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.SQLinjectionActivity",
+                "name": "com.app.damnvulnerablebank.AddBeneficiary",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.InsecureStorageSharedPrefs",
-                "exported": false
-            },
-            {
-                "name": "owasp.sat.agoat.InsecureStorageTempActivity",
-                "exported": false
-            },
-            {
-                "name": "owasp.sat.agoat.AccessControlIssue1Activity",
-                "exported": false
-            },
-            {
-                "name": "owasp.sat.agoat.AccessControl1ViewActivity",
+                "name": "com.app.damnvulnerablebank.SendMoney",
                 "exported": true
             },
             {
-                "name": "owasp.sat.agoat.HardCodeActivity",
+                "name": "com.app.damnvulnerablebank.ViewBeneficiaryAdmin",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.InsecureStorageSQLiteActivity",
+                "name": "com.app.damnvulnerablebank.GetTransactions",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.InsecureStorageSharedPrefs1Activity",
+                "name": "com.app.damnvulnerablebank.ViewBalance",
+                "exported": true
+            },
+            {
+                "name": "com.app.damnvulnerablebank.Dashboard",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.TrafficActivity",
+                "name": "com.app.damnvulnerablebank.RegisterBank",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.ContentProviderActivity",
+                "name": "com.app.damnvulnerablebank.BankLogin",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.EmulatorDetectionActivity",
+                "name": "com.app.damnvulnerablebank.MainActivity",
                 "exported": false
             },
             {
-                "name": "owasp.sat.agoat.InsecureStorageSDCardActivity",
-                "exported": false
+                "name": "com.app.damnvulnerablebank.SplashScreen",
+                "exported": true
             },
             {
-                "name": "owasp.sat.agoat.InputValidationsWebViewURLActivity",
-                "exported": false
+                "name": "androidx.biometric.DeviceCredentialHandlerActivity",
+                "exported": true
             },
             {
-                "name": "owasp.sat.agoat.InputValidationsOSCMDInjectionMain2Activity",
-                "exported": false
+                "name": "com.google.firebase.auth.internal.FederatedSignInActivity",
+                "exported": true
             },
             {
-                "name": "owasp.sat.agoat.BinaryPatchingActivity",
-                "exported": false
-            },
-            {
-                "name": "owasp.sat.agoat.ClipboardActivity",
-                "exported": false
-            },
-            {
-                "name": "owasp.sat.agoat.InsecureStorageActivity",
-                "exported": false
-            },
-            {
-                "name": "owasp.sat.agoat.SideChannelDataLeakageActivity",
-                "exported": false
-            },
-            {
-                "name": "owasp.sat.agoat.InputValidationsActivity",
-                "exported": false
-            },
-            {
-                "name": "owasp.sat.agoat.KeyboardCacheActivity",
+                "name": "com.google.android.gms.common.api.GoogleApiActivity",
                 "exported": false
             }
         ],
         "services": [
             {
-                "name": "owasp.sat.agoat.DownloadInvoiceService",
-                "exported": true
+                "name": "com.google.firebase.components.ComponentDiscoveryService",
+                "exported": false
             }
         ],
         "receivers": [
+        ],
+        "minSdk": 21,
+        "targetSdk": 29,
+        "isDebuggable": false
+    },
+    "storage": {
+        "databases": [
+        ],
+        "sharedPreferences": [
             {
-                "name": "owasp.sat.agoat.ShowDataReceiver",
-                "exported": true
+                "name": "apiurl",
+                "path": "/data/user/0/com.app.damnvulnerablebank/shared_prefs/apiurl.xml",
+                "keys": [
+                    "apiurl"
+                ],
+                "hasSensitiveData": false
+            },
+            {
+                "name": "jwt",
+                "path": "/data/user/0/com.app.damnvulnerablebank/shared_prefs/jwt.xml",
+                "keys": [
+                    "isloggedin",
+                    "accesstoken"
+                ],
+                "hasSensitiveData": true
+            },
+            {
+                "name": "WebViewChromiumPrefs",
+                "path": "/data/user/0/com.app.damnvulnerablebank/shared_prefs/WebViewChromiumPrefs.xml",
+                "keys": [
+                    "lastVersionCodeUsed"
+                ],
+                "hasSensitiveData": false
+            },
+            {
+                "name": "AwOriginVisitLoggerPrefs",
+                "path": "/data/user/0/com.app.damnvulnerablebank/shared_prefs/AwOriginVisitLoggerPrefs.xml",
+                "keys": [
+                    "sites_visited_weekly_time",
+                    "related_sites_visited_weekly_set",
+                    "origins_visited_date",
+                    "origins_visited_set",
+                    "sites_visited_weekly_set"
+                ],
+                "hasSensitiveData": false
             }
         ],
-        "minSdk": 18,
-        "targetSdk": 26,
-        "isDebuggable": true
+        "filesDirectory": "/data/user/0/com.app.damnvulnerablebank/files",
+        "internalFiles": [
+        ],
+        "externalFiles": [
+        ],
+        "vulnerabilities": [
+            {
+                "type": "INSECURE_SHARED_PREFERENCES",
+                "severity": "HIGH",
+                "description": "Sensitive data stored in SharedPreferences: jwt",
+                "details": "Keys: accesstoken",
+                "recommendation": "Use Android Keystore or EncryptedSharedPreferences",
+                "location": "/data/user/0/com.app.damnvulnerablebank/shared_prefs/jwt.xml"
+            }
+        ]
+    },
+    "nativeContext": {
+        "arch": "arm64",
+        "pointerSize": 8,
+        "modules": [
+            {
+                "name": "libfrida-check.so",
+                "path": "/data/app/~~R-RyTsz16IndupjXw4H-cw==/com.app.damnvulnerablebank-iCE7YYAUtIOxum0mtNJuSA==/lib/arm64/libfrida-check.so",
+                "size": 8192,
+                "exports": [
+                    "Java_com_app_damnvulnerablebank_FridaCheckJNI_fridaCheck"
+                ]
+            }
+        ],
+        "protections": [
+            {
+                "category": "FRIDA_DETECTION",
+                "func": "Java_com_app_damnvulnerablebank_FridaCheckJNI_fridaCheck",
+                "module": "libfrida-check.so",
+                "address": "0x7bc758272c"
+            }
+        ],
+        "summary": {
+            "total": 363,
+            "app": 1
+        }
     }
 }

