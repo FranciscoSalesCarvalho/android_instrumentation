@@ -9,7 +9,7 @@ object LLMProviderFactory {
     ): LLMProvider {
         return when (providerName.lowercase().trim()) {
             "anthropic", "claude" -> {
-                val model  = modelOverride ?: "claude-sonnet-4-20250514"
+                val model  = modelOverride ?: "claude-sonnet-4-6"
                 AnthropicProvider(apiKey = apiKey, modelName = model)
             }
             else -> throw IllegalArgumentException(

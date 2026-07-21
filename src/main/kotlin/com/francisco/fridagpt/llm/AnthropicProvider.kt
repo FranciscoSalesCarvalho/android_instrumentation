@@ -21,7 +21,7 @@ private val logger = KotlinLogging.logger {}
  */
 class AnthropicProvider(
     private val apiKey: String,
-    override val modelName: String = "claude-sonnet-4-20250514",
+    override val modelName: String = "anthropic.claude-sonnet-4-6",
     private val maxTokens: Int = 4096
 ) : LLMProvider {
     override val providerName: String
@@ -127,6 +127,7 @@ private data class ClaudeRequest(
     val model: String,
     @SerialName("max_tokens")
     val maxTokens: Int,
+    val temperature: Double = 0.3,
     val system: String,
     val messages: List<Message>
 )
