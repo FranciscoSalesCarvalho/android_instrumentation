@@ -127,7 +127,6 @@ private data class ClaudeRequest(
     val model: String,
     @SerialName("max_tokens")
     val maxTokens: Int,
-    val temperature: Double = 0.3,
     val system: String,
     val messages: List<Message>
 )
