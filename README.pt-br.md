@@ -10,6 +10,15 @@ utiliza para guiar um LLM na produção de scripts funcionais e específicos par
 > **Artigo:** *FridaForge: Geração Automatizada de Scripts de Instrumentação Dinâmica Assistida por Modelos de Linguagem
 com Contexto da Aplicação*  
 > **Evento:** SBSeg
+>
+> **Resumo:** A instrumentação dinâmica com Frida permite inspecionar operações internas,
+> interceptar dados sensíveis e contornar mecanismos de proteção em aplicações Android,
+> mas exige conhecimento da API do Frida e da estrutura interna da aplicação-alvo. O
+> FridaForge é uma ferramenta de código aberto que gera e executa scripts Frida a partir
+> de consultas em linguagem natural, utilizando informações coletadas da aplicação em
+> execução para adaptar os scripts ao alvo. Avaliado em dez aplicações Android
+> intencionalmente vulneráveis (83 tarefas, 92 consultas, 460 execuções), o FridaForge
+> alcançou taxa de sucesso de 95,7%.
 
 🌐 [English version](README.md)
 
@@ -44,8 +53,8 @@ por meio de quatro etapas:
 3. **Geração de scripts executáveis** — uso de um LLM para produzir scripts Frida em JavaScript que referenciam
    elementos reais da aplicação
 4. **Validação e execução** — extração, validação sintática e injeção automática do script na aplicação-alvo
-5. **Correção iterativa** — quando um script falha ou produz resultados inesperados, o analista pode acionar um ciclo
-   de correção que alimenta os logs de execução e feedback de volta ao LLM para refinamento
+5. **Correção iterativa** — quando um script falha ou produz resultados inesperados, o analista pode acionar um ciclo de
+   correção que alimenta os logs de execução e feedback de volta ao LLM para refinamento
 
 As consultas podem ser formuladas em três níveis de especificidade:
 
@@ -62,9 +71,14 @@ As consultas podem ser formuladas em três níveis de especificidade:
 - **SO:** macOS ou Linux
 - **Java:** JDK 17+
 - **Android:** Dispositivo ou emulador com acesso root
-- **Frida:** v16+ instalado no host (`pip install frida-tools`) e Frida Server no dispositivo
+- **Frida:** v17.4.1 instalado no host (`pip install frida-tools`) e Frida Server no dispositivo
 - **ADB:** Android Debug Bridge configurado e dispositivo conectado
 - **Chave de API:** Chave da API da Anthropic para acesso ao Claude
+- **Nota sobre custo de reprodução:** a geração de scripts depende de chamadas à API da Anthropic, um serviço pago.
+  Reproduzir o protocolo experimental completo (460 execuções em 10 aplicações) gera custo não trivial de API e exige
+  configurar um emulador Android com root e Frida Server. Para fins de verificação, recomendamos
+  a [reprodução mínima](#reprodução-mínima-uma-única-aplicação) abaixo, ou a inspeção das saídas já registradas em
+  `artifacts/` e `examples/scripts/`.
 
 ---
 
@@ -154,8 +168,8 @@ Comandos disponíveis no modo interativo:
 
 ### Correção Iterativa de Scripts
 
-Quando um script gerado não produz o resultado esperado — seja por erro técnico (crash, exceção) ou por falha
-semântica (método errado hookado, output irrelevante) — o analista pode acionar um ciclo de correção usando `/retry`:
+Quando um script gerado não produz o resultado esperado — seja por erro técnico (crash, exceção) ou por falha semântica
+(método errado hookado, output irrelevante) — o analista pode acionar um ciclo de correção usando `/retry`:
 
 ```bash
 # Sem feedback: LLM analisa output do Frida e logcat automaticamente
@@ -168,10 +182,12 @@ fridaforge> /retry script crashou, tentar hookar ContextWrapper em vez de Contex
 
 O ciclo de correção combina três fontes de informação:
 
-- **Logs de execução** — stdout/stderr do Frida e logcat filtrado do Android, capturados automaticamente durante a execução
+- **Logs de execução** — stdout/stderr do Frida e logcat filtrado do Android, capturados automaticamente durante a
+  execução
 - **Feedback do analista** — diagnóstico textual opcional fornecido via `/retry`
-- **Contexto da aplicação** — o mesmo contexto coletado em tempo de execução (classes, métodos, bibliotecas) utilizado na consulta original
-  O analista pode invocar `/retry` quantas vezes forem necessárias. Cada correção se baseia na tentativa imediatamente anterior.
+- **Contexto da aplicação** — o mesmo contexto coletado em tempo de execução (classes, métodos, bibliotecas) utilizado
+  na consulta original O analista pode invocar `/retry` quantas vezes forem necessárias. Cada correção se baseia na
+  tentativa imediatamente anterior.
 
 ### Modo de Consulta Única
 
@@ -224,7 +240,7 @@ O ciclo de correção combina três fontes de informação:
 ```
 
 > **Dica:** Quando um bypass de SSL pinning falha, capture o stack trace do `logcat` e forneça-o via `-e`/
-`--stacktrace`. O LLM utiliza essa informação para identificar a classe e o método exatos que realizam a validação do
+> `--stacktrace`. O LLM utiliza essa informação para identificar a classe e o método exatos que realizam a validação do
 > certificado, gerando scripts mais precisos.
 
 ### Interceptar Operações Criptográficas
@@ -260,7 +276,7 @@ fridaforge> /retry interceptar o body da requisição HTTP, credenciais são env
 
 ## Estrutura do Projeto
 
-````
+```
 fridaforge/
 ├── README.md                          # Documentação (inglês)
 ├── README.pt-br.md                    # Documentação (português)
@@ -304,6 +320,13 @@ fridaforge/
 └── utils/
 └── LogcatCapture.kt           # Captura e filtragem de logcat
 ```
+
+**Mapeamento para as reivindicações do artigo:** a abordagem de geração guiada por contexto dinâmico descrita no artigo
+corresponde diretamente a esta estrutura. A classificação do nível de especificidade da consulta (Seção 3.2) é
+implementada em `QueryRouter.kt` e `QueryParser.kt`. A coleta dinâmica de contexto (Seção 3.3) é implementada no pacote 
+`collectors/`, com `NativeLibraryCollector.kt` responsável pela enumeração de módulos nativos. A injeção progressiva de 
+contexto (Seção 3.4) é implementada em `PromptBuilder.kt`. A validação e execução do script (Seção 3.6) é implementada em
+`ScriptExecutor.kt`. O mecanismo de refinamento iterativo, é implementado em `RetryManager.kt` e `CorrectionPromptBuilder.kt`.
 
 ---
 
@@ -352,6 +375,25 @@ adb install <app.apk>
 adb shell am force-stop <nome_do_pacote>
 adb shell pm clear <nome_do_pacote>
 ```
+
+### Reprodução Mínima (Uma Única Aplicação)
+
+Para revisores que desejam verificar a funcionalidade sem configurar o benchmark completo, os passos abaixo reproduzem
+uma tarefa representativa em poucos minutos:
+
+```bash
+# 1. Instalar o DIVA (100% de sucesso na avaliação completa)
+adb install diva-beta.apk
+
+# 2. Executar uma consulta genérica para capturar logs sensíveis
+./gradlew run --args="-p jakhar.aseem.diva -q 'capture sensitive logs being logged' -k $ANTHROPIC_API_KEY"
+
+# 3. Comparar a saída com o resultado esperado documentado em
+#    examples/scripts/diva/script1.js
+```
+
+Isso não reproduz o protocolo completo de 460 execuções, mas demonstra todo o fluxo — coleta de contexto, construção do
+prompt, geração do script e execução — de ponta a ponta.
 
 ### 4. Resultados dos Experimentos
 

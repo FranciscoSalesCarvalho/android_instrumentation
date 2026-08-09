@@ -1,194 +1,137 @@
-/**
- * Frida script to intercept authentication data storage in com.vulnforum
- * Hooks SessionManager and SharedPreferences to capture sensitive auth data
- */
-
+// Frida script to capture sensitive logs being logged in DIVA app
 Java.perform(function() {
+    console.log("[*] Starting sensitive log capture...");
+
+    // Hook android.util.Log methods to capture all log output
+    var Log = Java.use("android.util.Log");
+
+    // Hook Log.v (verbose)
+    Log.v.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
+        if (tag.indexOf("diva") !== -1 || tag.indexOf("DIVA") !== -1 || 
+            tag.indexOf("jakhar") !== -1 || tag.indexOf("Jakhar") !== -1) {
+            console.log("[Log.v] Tag: " + tag + " | Message: " + msg);
+        }
+        return this.v(tag, msg);
+    };
+
+    // Hook Log.d (debug)
+    Log.d.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
+        console.log("[Log.d] Tag: " + tag + " | Message: " + msg);
+        return this.d(tag, msg);
+    };
+
+    // Hook Log.i (info)
+    Log.i.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
+        console.log("[Log.i] Tag: " + tag + " | Message: " + msg);
+        return this.i(tag, msg);
+    };
+
+    // Hook Log.w (warning)
+    Log.w.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
+        console.log("[Log.w] Tag: " + tag + " | Message: " + msg);
+        return this.w(tag, msg);
+    };
+
+    // Hook Log.e (error)
+    Log.e.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
+        console.log("[Log.e] Tag: " + tag + " | Message: " + msg);
+        return this.e(tag, msg);
+    };
+
+    // Hook Log.wtf (what a terrible failure)
     try {
-        // =========================================================
-        // Hook SessionManager - the primary auth data storage class
-        // =========================================================
-        var SessionManager = Java.use("com.vulnforum.SessionManager");
-
-        // Hook saveSession to capture all stored auth data
-        SessionManager.saveSession.implementation = function(token, username, role, balance) {
-            console.log("\n[+] SessionManager.saveSession() called");
-            console.log("    [TOKEN]    : " + token);
-            console.log("    [USERNAME] : " + username);
-            console.log("    [ROLE]     : " + role);
-            console.log("    [BALANCE]  : " + balance);
-            
-            // Call the original method
-            this.saveSession(token, username, role, balance);
+        Log.wtf.overload('java.lang.String', 'java.lang.String').implementation = function(tag, msg) {
+            console.log("[Log.wtf] Tag: " + tag + " | Message: " + msg);
+            return this.wtf(tag, msg);
         };
-
-        // Hook getToken to see when/how the token is retrieved
-        SessionManager.getToken.implementation = function() {
-            var token = this.getToken();
-            console.log("\n[+] SessionManager.getToken() called");
-            console.log("    [TOKEN] : " + token);
-            return token;
-        };
-
-        // Hook getUsername
-        SessionManager.getUsername.implementation = function() {
-            var username = this.getUsername();
-            console.log("\n[+] SessionManager.getUsername() called");
-            console.log("    [USERNAME] : " + username);
-            return username;
-        };
-
-        // Hook getRole
-        SessionManager.getRole.implementation = function() {
-            var role = this.getRole();
-            console.log("\n[+] SessionManager.getRole() called");
-            console.log("    [ROLE] : " + role);
-            return role;
-        };
-
-        // Hook getBalance
-        SessionManager.getBalance.implementation = function() {
-            var balance = this.getBalance();
-            console.log("\n[+] SessionManager.getBalance() called");
-            console.log("    [BALANCE] : " + balance);
-            return balance;
-        };
-
-        // Hook clear to detect logout
-        SessionManager.clear.implementation = function() {
-            console.log("\n[+] SessionManager.clear() called - session being cleared");
-            this.clear();
-        };
-
-        console.log("[*] SessionManager hooks installed successfully");
-
     } catch(e) {
-        console.log("[-] Error hooking SessionManager: " + e);
+        console.log("[!] Could not hook Log.wtf: " + e);
     }
 
+    // Hook LogActivity.processCC - this is the main vulnerable method that logs credit card info
     try {
-        // =========================================================
-        // Hook SharedPreferencesImpl$EditorImpl for raw storage interception
-        // =========================================================
-        var EditorImpl = Java.use("android.app.SharedPreferencesImpl$EditorImpl");
+        var LogActivity = Java.use("jakhar.aseem.diva.LogActivity");
+        LogActivity.processCC.implementation = function(ccNum) {
+            console.log("[*] LogActivity.processCC called with credit card number: " + ccNum);
+            this.processCC(ccNum);
+        };
+        console.log("[+] Hooked LogActivity.processCC");
+    } catch(e) {
+        console.log("[!] Could not hook LogActivity.processCC: " + e);
+    }
 
+    // Hook LogActivity.checkout to capture when checkout is triggered
+    try {
+        var LogActivity2 = Java.use("jakhar.aseem.diva.LogActivity");
+        LogActivity2.checkout.implementation = function(view) {
+            console.log("[*] LogActivity.checkout called");
+            this.checkout(view);
+        };
+        console.log("[+] Hooked LogActivity.checkout");
+    } catch(e) {
+        console.log("[!] Could not hook LogActivity.checkout: " + e);
+    }
+
+    // Hook InsecureDataStorage1Activity.saveCredentials - credentials stored in SharedPreferences
+    try {
+        var IDS1 = Java.use("jakhar.aseem.diva.InsecureDataStorage1Activity");
+        IDS1.saveCredentials.implementation = function(view) {
+            console.log("[*] InsecureDataStorage1Activity.saveCredentials called");
+            this.saveCredentials(view);
+        };
+        console.log("[+] Hooked InsecureDataStorage1Activity.saveCredentials");
+    } catch(e) {
+        console.log("[!] Could not hook InsecureDataStorage1Activity.saveCredentials: " + e);
+    }
+
+    // Hook InsecureDataStorage2Activity.saveCredentials - credentials stored in SQLite
+    try {
+        var IDS2 = Java.use("jakhar.aseem.diva.InsecureDataStorage2Activity");
+        IDS2.saveCredentials.implementation = function(view) {
+            console.log("[*] InsecureDataStorage2Activity.saveCredentials called");
+            this.saveCredentials(view);
+        };
+        console.log("[+] Hooked InsecureDataStorage2Activity.saveCredentials");
+    } catch(e) {
+        console.log("[!] Could not hook InsecureDataStorage2Activity.saveCredentials: " + e);
+    }
+
+    // Hook SharedPreferences$EditorImpl.putString to capture credentials being saved
+    try {
+        var EditorImpl = Java.use("android.app.SharedPreferencesImpl$EditorImpl");
         EditorImpl.putString.implementation = function(key, value) {
-            // Filter for auth-related keys
-            var keyStr = key ? key.toString() : "null";
-            var valueStr = value ? value.toString() : "null";
-            
-            // Only log potentially sensitive auth-related keys
-            var sensitiveKeywords = ["token", "auth", "user", "pass", "session", "role", "balance", "credential", "key", "secret"];
-            var isSensitive = false;
-            
-            for (var i = 0; i < sensitiveKeywords.length; i++) {
-                if (keyStr.toLowerCase().indexOf(sensitiveKeywords[i]) !== -1) {
-                    isSensitive = true;
-                    break;
-                }
-            }
-            
-            if (isSensitive) {
-                console.log("\n[+] SharedPreferences.putString() - SENSITIVE DATA DETECTED");
-                console.log("    [KEY]   : " + keyStr);
-                console.log("    [VALUE] : " + valueStr);
-                // Print stack trace to identify caller
-                var stack = Java.use("android.util.Log").getStackTraceString(
-                    Java.use("java.lang.Exception").$new("Stack trace")
-                );
-                console.log("    [STACK] : " + stack.split("\n").slice(1, 6).join("\n            "));
-            }
-            
+            // Filter for DIVA-related preferences
+            console.log("[SharedPreferences.putString] Key: " + key + " | Value: " + value);
             return this.putString(key, value);
         };
-
-        EditorImpl.putFloat.implementation = function(key, value) {
-            var keyStr = key ? key.toString() : "null";
-            var sensitiveKeywords = ["token", "auth", "user", "pass", "session", "role", "balance", "credential"];
-            var isSensitive = false;
-            
-            for (var i = 0; i < sensitiveKeywords.length; i++) {
-                if (keyStr.toLowerCase().indexOf(sensitiveKeywords[i]) !== -1) {
-                    isSensitive = true;
-                    break;
-                }
-            }
-            
-            if (isSensitive) {
-                console.log("\n[+] SharedPreferences.putFloat() - SENSITIVE DATA DETECTED");
-                console.log("    [KEY]   : " + keyStr);
-                console.log("    [VALUE] : " + value);
-            }
-            
-            return this.putFloat(key, value);
-        };
-
-        console.log("[*] SharedPreferencesImpl$EditorImpl hooks installed successfully");
-
+        console.log("[+] Hooked SharedPreferencesImpl$EditorImpl.putString");
     } catch(e) {
-        console.log("[-] Error hooking SharedPreferencesImpl$EditorImpl: " + e);
+        console.log("[!] Could not hook SharedPreferencesImpl$EditorImpl.putString: " + e);
     }
 
+    // Hook HardcodeActivity.access to see hardcoded credentials being checked
     try {
-        // =========================================================
-        // Hook LoginResponse to capture login data before it's stored
-        // =========================================================
-        var LoginResponse = Java.use("com.vulnforum.data.LoginResponse");
-
-        LoginResponse.copy.implementation = function(token, username, role, balance) {
-            console.log("\n[+] LoginResponse.copy() called");
-            console.log("    [TOKEN]    : " + token);
-            console.log("    [USERNAME] : " + username);
-            console.log("    [ROLE]     : " + role);
-            console.log("    [BALANCE]  : " + balance);
-            return this.copy(token, username, role, balance);
+        var HardcodeActivity = Java.use("jakhar.aseem.diva.HardcodeActivity");
+        HardcodeActivity.access.implementation = function(view) {
+            console.log("[*] HardcodeActivity.access called - checking hardcoded credentials");
+            this.access(view);
         };
-
-        console.log("[*] LoginResponse hooks installed successfully");
-
+        console.log("[+] Hooked HardcodeActivity.access");
     } catch(e) {
-        console.log("[-] Error hooking LoginResponse: " + e);
+        console.log("[!] Could not hook HardcodeActivity.access: " + e);
     }
 
+    // Hook Hardcode2Activity.access
     try {
-        // =========================================================
-        // Hook AuthService.login to capture login credentials
-        // =========================================================
-        var AuthService = Java.use("com.vulnforum.network.AuthService");
-
-        // Note: login returns a Retrofit Call, hook at the interface level
-        AuthService.login.implementation = function(loginRequest) {
-            console.log("\n[+] AuthService.login() called");
-            if (loginRequest) {
-                console.log("    [LOGIN REQUEST] : " + loginRequest.toString());
-            }
-            return this.login(loginRequest);
+        var Hardcode2Activity = Java.use("jakhar.aseem.diva.Hardcode2Activity");
+        Hardcode2Activity.access.implementation = function(view) {
+            console.log("[*] Hardcode2Activity.access called - checking hardcoded credentials");
+            this.access(view);
         };
-
-        console.log("[*] AuthService hooks installed successfully");
-
+        console.log("[+] Hooked Hardcode2Activity.access");
     } catch(e) {
-        console.log("[-] Error hooking AuthService: " + e);
+        console.log("[!] Could not hook Hardcode2Activity.access: " + e);
     }
 
-    try {
-        // =========================================================
-        // Hook LoginRequest to capture credentials being sent
-        // =========================================================
-        var LoginRequest = Java.use("com.vulnforum.data.LoginRequest");
-
-        LoginRequest.copy.implementation = function(username, password) {
-            console.log("\n[+] LoginRequest.copy() called");
-            console.log("    [USERNAME] : " + username);
-            console.log("    [PASSWORD] : " + password);
-            return this.copy(username, password);
-        };
-
-        console.log("[*] LoginRequest hooks installed successfully");
-
-    } catch(e) {
-        console.log("[-] Error hooking LoginRequest: " + e);
-    }
-
-    console.log("\n[*] All authentication storage hooks active. Waiting for events...\n");
+    console.log("[*] All hooks installed. Monitoring for sensitive log data...");
 });

@@ -9,6 +9,13 @@ guide an LLM in producing functional, application-specific scripts.
 > **Paper:** *FridaForge: Geração Automatizada de Scripts de Instrumentação Dinâmica Assistida por Modelos de Linguagem
 com Contexto da Aplicação*  
 > **Venue:** SBSeg
+>
+>  **Abstract:** Dynamic instrumentation with Frida allows Android security analysts to inspect internal behavior,
+> intercept sensitive data, and bypass protection mechanisms, but it requires expertise in both the Frida API and the
+> target application's internal structure. FridaForge is an open-source tool that generates and executes Frida scripts
+> from natural language queries, using information collected from the running application to adapt scripts to the target.
+> Evaluated on ten intentionally vulnerable Android applications (83 tasks, 92 queries, 460 executions), FridaForge
+> achieved a 95.7% success rate.
 
 🌐 [Versão em Português](README.pt-br.md)
 
@@ -60,9 +67,14 @@ Queries can be formulated at three specificity levels:
 - **OS:** macOS or Linux
 - **Java:** JDK 17+
 - **Android:** Device or emulator with root access
-- **Frida:** v16+ installed on host (`pip install frida-tools`) and Frida Server on device
+- **Frida:** v17.4.1 installed on host (`pip install frida-tools`) and Frida Server on device
 - **ADB:** Android Debug Bridge configured and device connected
 - **API Key:** Anthropic API key for Claude access
+- **Note on reproduction cost:** script generation depends on calls to the Anthropic API, which is a paid service.
+  Reproducing the full experimental protocol (460 executions across 10 applications) incurs non-trivial API cost and
+  requires setting up a rooted Android emulator with Frida Server. For verification purposes, we recommend
+  the [minimal reproduction](#minimal-reproduction-single-application) below, or inspecting the pre-recorded outputs in
+  `artifacts/` and `examples/scripts/`.
 
 ---
 
@@ -168,8 +180,8 @@ The correction cycle combines three sources of information:
 
 - **Execution logs** — Frida stdout/stderr and filtered Android logcat, captured automatically during execution
 - **Analyst feedback** — optional textual diagnosis provided via `/retry`
-- **Application context** — the same runtime context (classes, methods, libraries) collected for the original query
-  The analyst can invoke `/retry` as many times as needed. Each correction builds on the immediately preceding attempt.
+- **Application context** — the same runtime context (classes, methods, libraries) collected for the original query The
+  analyst can invoke `/retry` as many times as needed. Each correction builds on the immediately preceding attempt.
 
 ### Single Query Mode
 
@@ -301,6 +313,15 @@ fridaforge/
     └── utils/
         └── LogcatCapture.kt           # Logcat capture and filtering
 ```
+**Mapping to paper claims:** the context-driven generation approach described in the
+paper corresponds directly to this structure. Query specificity classification
+(Section 3.2) is implemented in `QueryRouter.kt` and `QueryParser.kt`. Dynamic context
+collection (Section 3.3) is implemented across the `collectors/` package, with
+`NativeLibraryCollector.kt` responsible for native module enumeration. Progressive
+context injection (Section 3.4) is implemented in `PromptBuilder.kt`. Script validation
+and execution (Section 3.6) is implemented in `ScriptExecutor.kt`. The iterative
+correction mechanism is implemented in `RetryManager.kt` and
+`CorrectionPromptBuilder.kt`.
 
 ---
 
@@ -349,6 +370,26 @@ adb install <app.apk>
 adb shell am force-stop <package_name>
 adb shell pm clear <package_name>
 ```
+
+### Minimal Reproduction (Single Application)
+
+For reviewers who want to verify functionality without setting up the full benchmark,
+the following steps reproduce a single representative task in a few minutes:
+
+```bash
+# 1. Install DIVA (100% success rate in the full evaluation)
+adb install diva-beta.apk
+
+# 2. Run a generic query
+./gradlew run --args="-p jakhar.aseem.diva -q 'capture sensitive data being logged' -k $ANTHROPIC_API_KEY"
+
+# 3. Compare output against the expected result documented in
+#    examples/scripts/diva/script1.js
+```
+
+This does not reproduce the full 460-execution protocol, but demonstrates the complete
+pipeline — context collection, prompt construction, script generation, and execution —
+end to end.
 
 ### 4. Experiment Results
 
