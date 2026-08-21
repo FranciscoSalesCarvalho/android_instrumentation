@@ -101,8 +101,16 @@ frida --version
 ### 3. Instalar o Frida Server no dispositivo
 
 ```bash
-# Baixar a versão correspondente à arquitetura do dispositivo
-# Enviar para o dispositivo
+# Check device architecture
+adb shell getprop ro.product.cpu.abi
+
+# Download the matching Frida Server release (replace <version> and <arch>,
+# e.g. 17.4.1 and arm64) from https://github.com/frida/frida/releases
+wget https://github.com/frida/frida/releases/download/<version>/frida-server-<version>-android-<arch>.xz
+unxz frida-server-<version>-android-<arch>.xz
+mv frida-server-<version>-android-<arch> frida-server
+
+# Push to device
 adb push frida-server /data/local/tmp/
 adb shell "chmod 755 /data/local/tmp/frida-server"
 adb shell "/data/local/tmp/frida-server &"
@@ -338,17 +346,16 @@ A avaliação descrita no artigo pode ser reproduzida conforme os passos abaixo.
 
 | ID  | Application          | MASTG ID       | Source                                                                |
 |-----|----------------------|----------------|-----------------------------------------------------------------------|
-| A1  | AndroGoat            | MASTG-APP-0001 | [GitHub](https://github.com/satishpatnayak/AndroGoat)                 |
-| A2  | UnCrackable L1       | MASTG-APP-0003 | [OWASP MASTG](https://mas.owasp.org/crackmes/Android/)                |
-| A3  | DIVA                 | MASTG-APP-0007 | [GitHub](https://github.com/payatu/diva-android)                      |
-| A4  | DodoVulnerableBank   | MASTG-APP-0008 | [GitHub](https://github.com/CSPF-Founder/DodoVulnerableBank)          |
-| A5  | InsecureBankv2       | MASTG-APP-0010 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2)      |
-| A6  | OVAA                 | MASTG-APP-0013 | [GitHub](https://github.com/oversecured/ovaa)                         |
-| A7  | Finstergram          | MASTG-APP-0016 | [GitHub](https://github.com/netlight/finstergram)                     |
-| A8  | MASTestApp-NETWORK   | MASTG-APP-0018 | [OWASP MASTG](https://github.com/sydseter/MASTestApp-Android-NETWORK) |
-| A9  | BugBazaar            | MASTG-APP-0029 | [GitHub](https://github.com/payatu/BugBazaar)                         |
-| A10 | VulnForum            | MASTG-APP-0031 | [GitHub](https://github.com/macik09/Vulnforum)                        |
-| A11 | Damn Vulnerable Bank | —              | [GitHub](https://github.com/rewanthtammana/Damn-Vulnerable-Bank)      |
+| A1  | AndroGoat            | MASTG-APP-0001 | [GitHub](https://github.com/satishpatnayak/AndroGoat)                 | |
+| A2  | DIVA                 | MASTG-APP-0007 | [GitHub](https://github.com/payatu/diva-android)                      |
+| A3  | DodoVulnerableBank   | MASTG-APP-0008 | [GitHub](https://github.com/CSPF-Founder/DodoVulnerableBank)          |
+| A4  | InsecureBankv2       | MASTG-APP-0010 | [GitHub](https://github.com/dineshshetty/Android-InsecureBankv2)      |
+| A5  | OVAA                 | MASTG-APP-0013 | [GitHub](https://github.com/oversecured/ovaa)                         |
+| A6  | Finstergram          | MASTG-APP-0016 | [GitHub](https://github.com/netlight/finstergram)                     |
+| A7  | MASTestApp-NETWORK   | MASTG-APP-0018 | [OWASP MASTG](https://github.com/sydseter/MASTestApp-Android-NETWORK) |
+| A8  | BugBazaar            | MASTG-APP-0029 | [GitHub](https://github.com/payatu/BugBazaar)                         |
+| A9 | VulnForum            | MASTG-APP-0031 | [GitHub](https://github.com/macik09/Vulnforum)                        |
+| A10 | Damn Vulnerable Bank | —              | [GitHub](https://github.com/rewanthtammana/Damn-Vulnerable-Bank)      |
 
 ### 2. Configuração do Ambiente
 
@@ -356,7 +363,9 @@ A avaliação descrita no artigo pode ser reproduzida conforme os passos abaixo.
 # Emulador Android com API 36, root habilitado
 adb root
 
-# Frida Server v17.4.1
+# Baixar o Frida Server v17.4.1 para arm64
+wget https://github.com/frida/frida/releases/download/17.4.1/frida-server-17.4.1-android-arm64.xz
+unxz frida-server-17.4.1-android-arm64.xz
 adb push frida-server-17.4.1-android-arm64 /data/local/tmp/frida-server
 adb shell "chmod 755 /data/local/tmp/frida-server"
 adb shell "/data/local/tmp/frida-server &"
@@ -397,7 +406,7 @@ prompt, geração do script e execução — de ponta a ponta.
 
 ### 4. Resultados dos Experimentos
 
-Os resultados completos (N=5, 475 execuções) estão disponíveis em `artifacts/FridaForge_Resultados_N5.xlsx`.
+Os resultados completos (N=5, 475 execuções) estão disponíveis em `artifacts/FridaForge_Resultados_Final.xlsx`.
 
 ---
 
